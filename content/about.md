@@ -1,6 +1,9 @@
 ---
 title: "About"
-date: "2016-05-05T21:48:51-07:00"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
-This is a "hello world" example website for the [**blogdown**](https://github.com/rstudio/blogdown) package. The theme was forked from [@jrutheiser/hugo-lithium-theme](https://github.com/jrutheiser/hugo-lithium-theme) and modified by [Yihui Xie](https://github.com/yihui/hugo-lithium-theme).
+My name is Andrew Bates. I'm currently studying statistics in the master's program at San Diego State University.
+
+This site will mostly be about statistics and R but other topics may come up occasionally. It was built using the R package [blogdown](https://github.com/rstudio/blogdown).
+
