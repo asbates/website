@@ -7,4 +7,4 @@ categories: []
 tags: []
 ---
 
-This is my first post on my first website! Mostly, I just wanted to make sure I could deploy a website before I started customizing the default theme in [blogdown](https://github.com/rstudio/blogdown).
+This is my first post on my first website! This is essentially my way of checking that I could successfully deploy a website. Thanks to Yihui Xie, Amber Thomas, and Alison Presmanes Hill for making this possible with [blogdown](https://github.com/rstudio/blogdown). I don't think I would have made a website without it.
