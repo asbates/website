@@ -1,4 +1,4 @@
-baseurl = "https://asbates.netlify.com"
+baseurl = "https://asbates.rbind.io/"
 languageCode = "en-us"
 title = "Andrew Bates's website"
 theme = "hugo-lithium-theme"
