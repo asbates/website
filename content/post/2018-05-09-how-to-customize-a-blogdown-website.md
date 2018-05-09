@@ -50,13 +50,6 @@ I also removed the RSS feed link in the `footer.html` file in the same directory
           
         </ul>
       </footer>
-
-    </div>
-    {{ partial "footer_highlightjs" . }}
-    {{ partial "footer_mathjax" . }}
-    {{ template "_internal/google_analytics.html" . }}
-  </body>
-</html>
 ```
 Note that the image is in the `/static/images` folder.
 
@@ -83,7 +76,7 @@ h3,
 h4,
 h5,
 h6 {
-  color: #00CED1; /* my change */
+  color: #00CED1; /* change color for headers */
 }
 ```
 
@@ -94,7 +87,7 @@ The last thing I did was to add pages and links to the navigation bar. This was 
     name = "Projects"
     url = "/projects/"
 ```
-After creating the link in `config.toml`, I added the `projects.md` to the `/content` folder.
+After creating the link in `config.toml`, I added a `projects.md` file to the `/content` folder.
 
 I did make a few more changes but the ones I discussed here should give you an idea of how you can customize your own site. Again, it might be helpful to go [here](https://github.com/asbates/asbates) and see the changes for yourself by looking at the files and folders I mentioned. I hope after reading this you see that it's not too difficult to customize a blogdown site even if you don't really know anything about `html` and `css`.
 
