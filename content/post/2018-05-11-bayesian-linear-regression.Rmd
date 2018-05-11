@@ -1,0 +1,12 @@
+---
+title: Bayesian Linear Regression
+author: ''
+date: '2018-05-11'
+slug: bayesian-linear-regression
+categories:
+  - Bayesian Statistics
+  - Linear Regression
+tags: []
+draft: true
+---
+
