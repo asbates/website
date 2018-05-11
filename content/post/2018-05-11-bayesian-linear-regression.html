@@ -12,4 +12,30 @@ draft: true
 
 
 
-
+<p>This is the first in a series of posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up a proper prior distribution using expert knowledge. The next posts desrcibe how to sample the posterior using a Gibbs sampler and using Stan.</p>
+<div id="the-model" class="section level3">
+<h3>The Model</h3>
+<p>In Bayesian linear regression, we model the data as</p>
+<p><span class="math display">\[ Y = X\beta + \varepsilon, \hspace{10pt} \varepsilon|\sigma \sim N_n(0,\sigma^2I) \]</span></p>
+<p>Here, <span class="math inline">\(Y\)</span> is the response and <span class="math inline">\(X\)</span> is the <span class="math inline">\(n \times r\)</span> matrix of covariates. We can write this model more compactly as</p>
+<p><span class="math display">\[ Y|\beta,\tau \sim N_n\left(X\beta, \frac{1}{\tau} I\right). \]</span></p>
+<p>In other words, we model <span class="math inline">\(Y\)</span> as multivariate normal with mean vector <span class="math inline">\(X\beta\)</span> and covariance matrix <span class="math inline">\(\frac{1}{\tau}I\)</span>. This looks a lot like the classical linear regression model but the difference here is that we condition on <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\tau\)</span> which are random variables instead of fixed values. We write <span class="math inline">\(1 / \tau\)</span> instead of <span class="math inline">\(\sigma^2\)</span> which is often done in Bayesian statistics because it makes some of the math easier.</p>
+</div>
+<div id="the-prior" class="section level2">
+<h2>The Prior</h2>
+<p>Now that a model is specified for the data, we need to specify a prior distribution for the parameters. There is a lot of freedom here. We can use whatever prior we think captures our prior information. However, we need to be able to obtain a sample from the posterior or we can’t really do anything. Sometimes we use what’s called an <em>improper</em> prior which is not actually a probabilty distribution but gives us a posterior that is. Here we consider a <em>proper</em> prior, so called because we specify a proper probability distribution. We use</p>
+<p><span class="math display">\[ \beta \sim N_r(\beta_0, C), \hspace{10pt} \tau \sim \text{Gamma}(a,b). \]</span></p>
+</div>
+<div id="the-posterior" class="section level2">
+<h2>The Posterior</h2>
+<p>It turns out that with this prior, we can’t obtain the posterior analytically. So we can’t actually sample from the true posterior. We can however, figure out what the conditional posteriors are. That is, the distributions of <span class="math inline">\(\tau|\beta,Y\)</span> and <span class="math inline">\(\beta|\tau,Y\)</span>:</p>
+<p><span class="math display">\[ \tau|\beta,Y \sim \text{Gamma}\left(a + \frac{n}{2}, \hspace{5pt}b + \frac{SSE + (\beta - \hat{\beta})&#39; X&#39;X (\beta - \hat{\beta})}{2}\right) \]</span></p>
+<p><span class="math display">\[ \beta|\tau,Y \sim N_r(\mu, V) \]</span> where <span class="math display">\[ \mu = V\left(\tau X&#39;Y + C^{-1} \beta_0\right), \hspace{10pt} V = \left(\tau X&#39;X + C^{-1}\right)^{-1}.\]</span></p>
+<p><span class="math inline">\(SSE\)</span> and <span class="math inline">\(\hat{\beta}\)</span> are the same as in frequentist regression.</p>
+<p>This looks a bit complicated! But realistically, it doesn’t matter. The point is that we can find the posterior conditionals. This lets us define what is called a Gibbs sampler which in turn lets us simulate (approximately) from the posterior. Given starting values <span class="math inline">\(\beta^{(0)}\)</span> and <span class="math inline">\(\tau^{(0)}\)</span>, we draw <span class="math inline">\(\tau^{(1)}\)</span> conditional on <span class="math inline">\(\beta^{(0)}\)</span> and <span class="math inline">\(Y\)</span>, then draw <span class="math inline">\(\beta^{(1)}\)</span> conditional on <span class="math inline">\(\tau^{(1)}\)</span> and <span class="math inline">\(Y\)</span> using the distributions above. We then repeat this process as many times as we like and treat this as a sample from the posterior.</p>
+</div>
+<div id="setting-up-the-prior" class="section level2">
+<h2>Setting Up the Prior</h2>
+<p>Now comes the tricky part. So far we have specified the Normal/Gamma prior assuming we know the values of the parameters. Of course, we don’t know the values but we need to specify them if we want to actually do anything.</p>
+<p>This is where we either need to have our own prior knowledge of the data at hand (the easy case) or we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can’t exactly ask them what the covariance matrix is for <span class="math inline">\(\beta\)</span> or what the <span class="math inline">\(a\)</span> parameter is for <span class="math inline">\(\tau\)</span>.</p>
+</div>

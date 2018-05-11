@@ -10,3 +10,52 @@ tags: []
 draft: true
 ---
 
+This is the first in a series of posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up a proper prior distribution using expert knowledge. The next posts desrcibe how to sample the posterior using a Gibbs sampler and using Stan.
+
+### The Model
+
+In Bayesian linear regression, we model the data as
+
+\[ Y = X\beta + \varepsilon, \hspace{10pt} \varepsilon|\sigma \sim N_n(0,\sigma^2I) \]
+
+
+Here, $Y$ is the response and $X$ is the $n \times r$ matrix of covariates. We can write this model more compactly as
+
+\[ Y|\beta,\tau \sim N_n\left(X\beta, \frac{1}{\tau} I\right). \]
+
+In other words, we model $Y$ as multivariate normal with mean vector $X\beta$ and covariance matrix $\frac{1}{\tau}I$. This looks a lot like the classical linear regression model but the difference here is that we condition on $\beta$ and $\tau$ which are random variables instead of fixed values. We write $1 / \tau$ instead of $\sigma^2$ which is often done in Bayesian statistics because it makes some of the math easier.
+
+
+## The Prior
+
+Now that a model is specified for the data, we need to specify a prior distribution for the parameters. There is a lot of freedom here. We can use whatever prior  we think captures our prior information. However, we need to be able to obtain a sample from the posterior or we can't really do anything. Sometimes we use what's called an *improper* prior which is not actually a probabilty distribution but gives us a posterior that is. Here we consider a *proper* prior, so called because we specify a proper probability distribution. We use
+
+\[ \beta \sim N_r(\beta_0, C), \hspace{10pt} \tau \sim \text{Gamma}(a,b). \]
+
+## The Posterior
+
+It turns out that with this prior, we can't obtain the posterior analytically. So we can't actually sample from the true posterior. We can however, figure out what the conditional posteriors are. That is, the distributions of $\tau|\beta,Y$ and $\beta|\tau,Y$:
+
+\[ \tau|\beta,Y \sim \text{Gamma}\left(a + \frac{n}{2}, \hspace{5pt}b + \frac{SSE + (\beta - \hat{\beta})' X'X (\beta - \hat{\beta})}{2}\right) \]
+
+\[ \beta|\tau,Y \sim N_r(\mu, V) \]
+where
+\[ \mu = V\left(\tau X'Y + C^{-1} \beta_0\right), \hspace{10pt} V = \left(\tau X'X + C^{-1}\right)^{-1}.\]
+
+$SSE$ and $\hat{\beta}$ are the same as in frequentist regression. 
+
+This looks a bit complicated! But realistically, it doesn't matter. The point is that we can find the posterior conditionals. This lets us define what is called a  Gibbs sampler which in turn lets us simulate (approximately) from the posterior. Given starting values $\beta^{(0)}$ and $\tau^{(0)}$, we draw $\tau^{(1)}$ conditional on $\beta^{(0)}$ and $Y$, then draw $\beta^{(1)}$ conditional on $\tau^{(1)}$ and $Y$ using the distributions above. We then repeat this process as many times as we like and treat this as a sample from the posterior.
+ 
+## Setting Up the Prior
+ 
+Now comes the tricky part. So far we have specified the Normal/Gamma prior assuming we know the values of the parameters. Of course, we don't know the values but we need to specify them if we want to actually do anything. 
+
+This is where we either need to have our own prior knowledge of the data at hand (the easy case) or we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can't exactly ask them what the covariance matrix is for $\beta$ or what the $a$ parameter is for $\tau$.
+
+
+
+
+
+
+
+
