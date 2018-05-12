@@ -32,25 +32,16 @@ Now that a model is specified for the data, we need to specify a prior distribut
 
 \[ \beta \sim N_r(\beta_0, C), \hspace{10pt} \tau \sim \text{Gamma}(a,b). \]
 
-## The Posterior
-
-It turns out that with this prior, we can't obtain the posterior analytically. So we can't actually sample from the true posterior. We can however, figure out what the conditional posteriors are. That is, the distributions of $\tau|\beta,Y$ and $\beta|\tau,Y$:
-
-\[ \tau|\beta,Y \sim \text{Gamma}\left(a + \frac{n}{2}, \hspace{5pt}b + \frac{SSE + (\beta - \hat{\beta})' X'X (\beta - \hat{\beta})}{2}\right) \]
-
-\[ \beta|\tau,Y \sim N_r(\mu, V) \]
-where
-\[ \mu = V\left(\tau X'Y + C^{-1} \beta_0\right), \hspace{10pt} V = \left(\tau X'X + C^{-1}\right)^{-1}.\]
-
-$SSE$ and $\hat{\beta}$ are the same as in frequentist regression. 
-
-This looks a bit complicated! But realistically, it doesn't matter. The point is that we can find the posterior conditionals. This lets us define what is called a  Gibbs sampler which in turn lets us simulate (approximately) from the posterior. Given starting values $\beta^{(0)}$ and $\tau^{(0)}$, we draw $\tau^{(1)}$ conditional on $\beta^{(0)}$ and $Y$, then draw $\beta^{(1)}$ conditional on $\tau^{(1)}$ and $Y$ using the distributions above. We then repeat this process as many times as we like and treat this as a sample from the posterior.
- 
-## Setting Up the Prior
- 
 Now comes the tricky part. So far we have specified the Normal/Gamma prior assuming we know the values of the parameters. Of course, we don't know the values but we need to specify them if we want to actually do anything. 
 
 This is where we either need to have our own prior knowledge of the data at hand (the easy case) or we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can't exactly ask them what the covariance matrix is for $\beta$ or what the $a$ parameter is for $\tau$.
+
+notes:
++ start with nba example
++ for induced prior equations
+    - may not need all the equations
+    - give $\tilde{X}$, etc. with values from questions
+    - write transformations to turn into beta and tau
 
 
 

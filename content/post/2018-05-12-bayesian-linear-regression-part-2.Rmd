@@ -1,0 +1,26 @@
+---
+title: Bayesian Linear Regression - Part 2
+author: ''
+date: '2018-05-12'
+slug: bayesian-linear-regression-part-2
+categories:
+  - Bayesian Statistics
+  - Linear Regression
+  - Gibbs Sampler
+  - MCMC
+tags: []
+---
+
+## The Posterior
+
+It turns out that with this prior, we can't obtain the posterior analytically. So we can't actually sample from the true posterior. We can however, figure out what the conditional posteriors are. That is, the distributions of $\tau|\beta,Y$ and $\beta|\tau,Y$:
+
+\[ \tau|\beta,Y \sim \text{Gamma}\left(a + \frac{n}{2}, \hspace{5pt}b + \frac{SSE + (\beta - \hat{\beta})' X'X (\beta - \hat{\beta})}{2}\right) \]
+
+\[ \beta|\tau,Y \sim N_r(\mu, V) \]
+where
+\[ \mu = V\left(\tau X'Y + C^{-1} \beta_0\right), \hspace{10pt} V = \left(\tau X'X + C^{-1}\right)^{-1}.\]
+
+$SSE$ and $\hat{\beta}$ are the same as in frequentist regression. 
+
+This looks a bit complicated! But realistically, it doesn't matter. The point is that we can find the posterior conditionals. This lets us define what is called a  Gibbs sampler which in turn lets us simulate (approximately) from the posterior. Given starting values $\beta^{(0)}$ and $\tau^{(0)}$, we draw $\tau^{(1)}$ conditional on $\beta^{(0)}$ and $Y$, then draw $\beta^{(1)}$ conditional on $\tau^{(1)}$ and $Y$ using the distributions above. We then repeat this process as many times as we like and treat this as a sample from the posterior.
