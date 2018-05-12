@@ -26,6 +26,41 @@ draft: true
 <p>Now that a model is specified for the data, we need to specify a prior distribution for the parameters. There is a lot of freedom here. We can use whatever prior we think captures our prior information. However, we need to be able to obtain a sample from the posterior or we can’t really do anything. Sometimes we use what’s called an <em>improper</em> prior which is not actually a probabilty distribution but gives us a posterior that is. Here we consider a <em>proper</em> prior, so called because we specify a proper probability distribution. We use</p>
 <p><span class="math display">\[ \beta \sim N_r(\beta_0, C), \hspace{10pt} \tau \sim \text{Gamma}(a,b). \]</span></p>
 <p>Now comes the tricky part. So far we have specified the Normal/Gamma prior assuming we know the values of the parameters. Of course, we don’t know the values but we need to specify them if we want to actually do anything.</p>
-<p>This is where we either need to have our own prior knowledge of the data at hand (the easy case) or we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can’t exactly ask them what the covariance matrix is for <span class="math inline">\(\beta\)</span> or what the <span class="math inline">\(a\)</span> parameter is for <span class="math inline">\(\tau\)</span>.</p>
-<p>notes: + start with nba example + for induced prior equations - may not need all the equations - give <span class="math inline">\(\tilde{X}\)</span>, etc. with values from questions - write transformations to turn into beta and tau</p>
+<p>This is where we either need to have our own prior knowledge of the data at hand or have previous data we can use. Otherwise, we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can’t exactly ask them what the covariance matrix is for <span class="math inline">\(\beta\)</span> or what the <span class="math inline">\(a\)</span> parameter is for <span class="math inline">\(\tau\)</span>. So we need to ask our expert a series of questions, then use their answers to set values for <span class="math inline">\(\beta_0, C, a\)</span> and <span class="math inline">\(b\)</span>.</p>
+</div>
+<div id="an-example" class="section level2">
+<h2>An Example</h2>
+<p>To illustrate what questions to ask the expert and how to turn the information into prior parameters, let’s consider an example. The data we will use is on NBA players from the 2015 season. There are 28 variables but we will only consider 4 here. The response is personal fouls (PF) and we are going to model this as a function of steals (STL), blocks (BLK), and minutes (MIN):</p>
+<p><span class="math display">\[ PF|\beta,\tau \sim N(\beta_1 + \beta_2 STL + \beta_2 BLK + \beta_3 MIN, \hspace{5pt} 1/\tau) \]</span></p>
+<p>These variables are recorded on a per game basis across the season (i.e. the first player had 0.6 personal fouls per game, 0.3 steals per game, 0 blocks, and played 12.4 minutes per game for the 2015 season).</p>
+<pre class="r"><code>library(readr)
+library(dplyr)
+nba &lt;- read_csv(&#39;../../static/data/nba2015.csv&#39;) %&gt;%
+  select(PF, STL, BLK, MIN)
+nba</code></pre>
+<pre><code>## # A tibble: 492 x 4
+##       PF   STL   BLK   MIN
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 0.600 0.300 0     12.4 
+##  2 2.30  0.700 0.200 23.0 
+##  3 1.80  0.400 0.500 17.0 
+##  4 2.80  0.600 0.300 23.1 
+##  5 1.60  0.900 1.30  30.5 
+##  6 2.10  0.700 1.30  30.6 
+##  7 1.90  0.900 0.800 18.5 
+##  8 2.00  0.800 0.100 23.6 
+##  9 2.40  0.600 0.200 33.3 
+## 10 0.200 0     0      2.80
+## # ... with 482 more rows</code></pre>
+<p>I don’t really know anything about basketball so I had to consult with someone who does (my brother-in-law). There are various ways to obtain prior information. For the <span class="math inline">\(\beta\)</span>s, I followed</p>
+<p>notes:</p>
+<ul>
+<li>start with nba example</li>
+<li>for induced prior equations
+<ul>
+<li>may not need all the equations</li>
+<li>give <span class="math inline">\(\tilde{X}\)</span>, etc. with values from questions</li>
+<li>write transformations to turn into beta and tau</li>
+</ul></li>
+</ul>
 </div>

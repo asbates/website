@@ -34,9 +34,30 @@ Now that a model is specified for the data, we need to specify a prior distribut
 
 Now comes the tricky part. So far we have specified the Normal/Gamma prior assuming we know the values of the parameters. Of course, we don't know the values but we need to specify them if we want to actually do anything. 
 
-This is where we either need to have our own prior knowledge of the data at hand (the easy case) or we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can't exactly ask them what the covariance matrix is for $\beta$ or what the $a$ parameter is for $\tau$.
+This is where we either need to have our own prior knowledge of the data at hand or have previous data we can use. Otherwise, we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can't exactly ask them what the covariance matrix is for $\beta$ or what the $a$ parameter is for $\tau$. So we need to ask our expert a series of questions, then use their answers to set values for $\beta_0, C, a$ and $b$.
+
+## An Example
+
+To illustrate what questions to ask the expert and how to turn the information into prior parameters, let's consider an example. The data we will use is on NBA players from the 2015 season. There are 28 variables but we will only consider 4 here. The response is personal fouls (PF) and we are going to model this as a function of steals (STL), blocks (BLK), and minutes (MIN): 
+
+\[ PF|\beta,\tau \sim N(\beta_1 + \beta_2 STL + \beta_2 BLK + \beta_3 MIN, \hspace{5pt} 1/\tau) \]
+
+These variables are recorded on a per game basis across the season (i.e. the first player had 0.6 personal fouls per game, 0.3 steals per game, 0 blocks, and played 12.4 minutes per game for the 2015 season).
+
+```{r read_data, message = FALSE}
+library(readr)
+library(dplyr)
+nba <- read_csv('../../static/data/nba2015.csv') %>%
+  select(PF, STL, BLK, MIN)
+nba
+```
+
+I don't really know anything about basketball so I had to consult with someone who does (my brother-in-law). There are various ways to obtain prior information. For the $\beta$s, I followed 
+
+
 
 notes:
+
 + start with nba example
 + for induced prior equations
     - may not need all the equations
