@@ -10,7 +10,7 @@ tags: []
 draft: true
 ---
 
-This is the first in a series of posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up a proper prior distribution using expert knowledge. The next posts desrcibe how to sample the posterior using a Gibbs sampler and using Stan.
+This is the first of two posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up a proper prior distribution using expert knowledge. The next post desrcibes how to sample from the posterior using a Gibbs sampler and using Stan.
 
 ### The Model
 
@@ -32,17 +32,17 @@ Now that a model is specified for the data, we need to specify a prior distribut
 
 \[ \beta \sim N_r(\beta_0, C), \hspace{10pt} \tau \sim \text{Gamma}(a,b). \]
 
-Now comes the tricky part. So far we have specified the Normal/Gamma prior assuming we know the values of the parameters. Of course, we don't know the values but we need to specify them if we want to actually do anything. 
+Now comes the tricky part. This prior assumes values for $\beta_0, C, a, b$ are given. Of course, we don't know the values but we need to specify them if we want to actually do anything. 
 
-This is where we either need to have our own prior knowledge of the data at hand or have previous data we can use. Otherwise, we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can't exactly ask them what the covariance matrix is for $\beta$ or what the $a$ parameter is for $\tau$. So we need to ask our expert a series of questions, then use their answers to set values for $\beta_0, C, a$ and $b$.
+This is where we either need to have our own prior knowledge of the data at hand or have previous data we can use. Otherwise, we need to talk to an expert and try to get enough information out of them to specify the parameters. I consider this the hard case. The expert here is someone who knows about the underlying subject but may not have much knowledge of statistics, let alone Bayesian statistics. And even if they are well versed in Bayesian statistics, we can't exactly ask them what the covariance matrix is for $\beta$ or what the parameter $a$ is for $\tau$. So we need to ask our expert a series of questions, then use their answers to set values for $\beta_0, C, a$ and $b$.
 
 ## An Example
 
 To illustrate what questions to ask the expert and how to turn the information into prior parameters, let's consider an example. The data we will use is on NBA players from the 2015 season. There are 28 variables but we will only consider 4 here. The response is personal fouls (PF) and we are going to model this as a function of steals (STL), blocks (BLK), and minutes (MIN): 
 
-\[ PF|\beta,\tau \sim N(\beta_1 + \beta_2 STL + \beta_2 BLK + \beta_3 MIN, \hspace{5pt} 1/\tau) \]
+\[ PF|\beta,\tau \sim N(\beta_1 + \beta_2 STL + \beta_3 BLK + \beta_4 MIN, \hspace{5pt} 1/\tau) \]
 
-These variables are recorded on a per game basis across the season (i.e. the first player had 0.6 personal fouls per game, 0.3 steals per game, 0 blocks, and played 12.4 minutes per game for the 2015 season).
+These variables are recorded on a per game basis across the season (i.e. the first player had 0.6 personal fouls per game, 0.3 steals per game, 0 blocks per game, and played 12.4 minutes per game for the 2015 season).
 
 ```{r read_data, message = FALSE}
 library(readr)
@@ -52,8 +52,30 @@ nba <- read_csv('../../static/data/nba2015.csv') %>%
 nba
 ```
 
-I don't really know anything about basketball so I had to consult with someone who does (my brother-in-law). There are various ways to obtain prior information. For the $\beta$s, I followed 
+I don't really know anything about basketball so I had to consult with someone who does (my brother-in-law). For the $\beta$s, I followed the process described in [Bayesian Ideas and Data Analysis](https://www.amazon.com/Bayesian-Ideas-Data-Analysis-Statisticians/dp/1439803544). First, I asked 
 
+> What is the average number of personal fouls per game for someone who has 0.5 steals, 1 block, and plays 10 minutes?
+
+The expert's answer was "1-2". This was great because it actually answers a second question that I would have had to ask:
+
+> How big could that be?
+
+We need to ask two questions here because $\beta$ has two parameters, the mean and precision. The answer to the first question gives us the mean, and the answer to the second, in combination with the first, gives us the variance. Luckily, both questions were answered in one shot. This series of questions was then repeated for different values of STL, BLK, and MIN[^1]. Since we have four $\beta$s here, we need to ask four questions.
+
+For the prior on $\tau$, the questions are a bit different. Instead of asking about the mean of the response (PF), we ask about the response itself. Depending on the expert and the data, it may be difficult to take this distinction into account. But we don't need a 'perfect' prior, we just need something that seems to reasonably caputre their knowledge. The questions we ask are:
+
+>1. For someone with 2 steals, 2 blocks, and plays 30 minutes[^2], what is the biggest number of personal fouls you would expect?
+>2. What is the biggest that could be?
+
+We might also clarify first question by adding something like "What is the number of personal fouls that only 5% of players like this would exceed?" The point is that we want to ask about a percentile of the response (in this case the 95th percentile). The answer to the second question then gives us an idea of how much that percentile can vary (so it's the percentile of the percentile of the data). The answers I got were 4.5 and 5.
+
+Now we have some numbers but how does that translate into priors for $\beta$ and $\tau$? Basically, we apply some transformations and use facts about the distributions at hand. For $\tau$, we actually asked about the distribution of a percentile of the data. We set the answer to question 1 to the mode of the percentile, and the answer to question 2 as the 95th percentile of this percentile. We then use facts about normal percentiles and gamma distributions to transform these into the mode and 95th percentile of $\sigma$, $\sigma^2$, then finally $\tau$. It's a bit messy to think about but easy to implement in code.
+
+For the $\beta$s, the questions we ask gives information about the conditional mean of the response given the number of steals, blocks, and minutes. We let $\tilde{m}_j = E[Y|\tilde{x}_j, \beta, \tau]$ and $\tilde{m} = (\tilde{m}_1, \ldots, \tilde{m}_r)'$ and assume that
+\[ \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})) \]
+where $D(\tilde{w})$ is a diagonal matrix with $\tilde{w}$s as the entries. The $\tilde{w}$s reflect the variability of the expert's best guess. $\tilde{x}_j$ is the vector with given values for the covariates. For example, for the example given above, $\tilde{x}_1 = (1, 0.5, 1, 10)'$ corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept. The questions we ask for the $\beta$s give us $\tilde{Y}$ and $D(\tilde{w})$. Then we get the prior for $\beta$ by setting
+\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)'\]
+where $\tilde{X}$ is the matrix whose rows are $\tilde{x}_j'$. This in turn induces a prior on $\beta$ because $\beta = \tilde{X}^{-1}\tilde{m}$ and since $\tilde{m}$ is normal, $\beta$ is normal. It will probably help to see this in the context of the data at hand.
 
 
 notes:
@@ -65,8 +87,8 @@ notes:
     - write transformations to turn into beta and tau
 
 
-
-
+[^1]: You pick some arbitrary values.
+[^2]: Or 1 STL, 1 BLK, and 15 minutes. Again, the values are arbitrary here.
 
 
 
