@@ -23,7 +23,7 @@ Here, $Y$ is the response and $X$ is the $n \times r$ matrix of covariates. We c
 
 \[ Y|\beta,\tau \sim N_n\left(X\beta, \frac{1}{\tau} I\right). \]
 
-In other words, we model $Y$ as multivariate normal with mean vector $X\beta$ and covariance matrix $\frac{1}{\tau}I$. This looks a lot like the classical linear regression model but the difference here is that we condition on $\beta$ and $\tau$ which are random variables instead of fixed values. We write $1 / \tau$ instead of $\sigma^2$ which is often done in Bayesian statistics because it makes some of the math easier.
+In other words, we model $Y$ as multivariate normal with mean vector $X\beta$ and covariance matrix $\frac{1}{\tau}I$. $Y$ is $n$ dimensional and $X$ is $n \times r$. This looks a lot like the classical linear regression model but the difference here is that we condition on $\beta$ and $\tau$ which are random variables instead of fixed values. We write $1 / \tau$ instead of $\sigma^2$ which is often done in Bayesian statistics because it makes some of the math easier.
 
 
 ## The Prior
@@ -52,6 +52,9 @@ nba <- read_csv('../../static/data/nba2015.csv') %>%
 nba
 ```
 
+
+### The Questions
+
 I don't really know anything about basketball so I had to consult with someone who does (my brother-in-law). For the $\beta$s, I followed the process described in [Bayesian Ideas and Data Analysis](https://www.amazon.com/Bayesian-Ideas-Data-Analysis-Statisticians/dp/1439803544). First, I asked 
 
 > What is the average number of personal fouls per game for someone who has 0.5 steals, 1 block, and plays 10 minutes?
@@ -69,22 +72,34 @@ For the prior on $\tau$, the questions are a bit different. Instead of asking ab
 
 We might also clarify first question by adding something like "What is the number of personal fouls that only 5% of players like this would exceed?" The point is that we want to ask about a percentile of the response (in this case the 95th percentile). The answer to the second question then gives us an idea of how much that percentile can vary (so it's the percentile of the percentile of the data). The answers I got were 4.5 and 5.
 
-Now we have some numbers but how does that translate into priors for $\beta$ and $\tau$? Basically, we apply some transformations and use facts about the distributions at hand. For $\tau$, we actually asked about the distribution of a percentile of the data. We set the answer to question 1 to the mode of the percentile, and the answer to question 2 as the 95th percentile of this percentile. We then use facts about normal percentiles and gamma distributions to transform these into the mode and 95th percentile of $\sigma$, $\sigma^2$, then finally $\tau$. It's a bit messy to think about but easy to implement in code.
+### Obtaining the Prior
 
-For the $\beta$s, the questions we ask gives information about the conditional mean of the response given the number of steals, blocks, and minutes. We let $\tilde{m}_j = E[Y|\tilde{x}_j, \beta, \tau]$ and $\tilde{m} = (\tilde{m}_1, \ldots, \tilde{m}_r)'$ and assume that
-\[ \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})) \]
-where $D(\tilde{w})$ is a diagonal matrix with $\tilde{w}$s as the entries. The $\tilde{w}$s reflect the variability of the expert's best guess. $\tilde{x}_j$ is the vector with given values for the covariates. For example, for the example given above, $\tilde{x}_1 = (1, 0.5, 1, 10)'$ corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept. The questions we ask for the $\beta$s give us $\tilde{Y}$ and $D(\tilde{w})$. Then we get the prior for $\beta$ by setting
-\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)'\]
-where $\tilde{X}$ is the matrix whose rows are $\tilde{x}_j'$. This in turn induces a prior on $\beta$ because $\beta = \tilde{X}^{-1}\tilde{m}$ and since $\tilde{m}$ is normal, $\beta$ is normal. It will probably help to see this in the context of the data at hand.
+Now that we have some numbers but how do we translate that into parameters for $\beta$ and $\tau$? We actually asked questions obout things that are easier to think about so we will need to apply some transformations to obtain the parameters we need.
 
+For $\tau$, we actually asked about the distribution of a percentile of the data. We set the answer to question 1 to the mode of the percentile, and the answer to question 2 as the 95th percentile of this percentile. We then use facts about normal percentiles and gamma distributions to transform these into the mode and 95th percentile of $\sigma$, $\sigma^2$, then finally $\tau$. It's a bit messy to think about but easy to implement in code.
 
-notes:
+For the $\beta$s, the questions we ask give information about the conditional mean of the response given the number of steals, blocks, and minutes. Specifically, we asked about $\tilde{m}_j = E[Y|\tilde{x}_j, \beta, \tau]$ for $j = 1,2,3,4$ (1 for each $\beta$). We assume that
+\[ \tilde{m} = (\tilde{m}_1, \ldots, \tilde{m}_r)' = \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})) \]
+where $D(\tilde{w})$ is a diagonal matrix with $\tilde{w}_j$ as the entries. The components of $\tilde{Y}$ are the answers to the first question (average # of personal fouls for players with $x$ steals, $y$ blocks, and $z$ minutes play time). The $\tilde{w}_j$s reflect the variability of the expert's best guess. These are the answers to the "How big could that be" question. $\tilde{x}_j$ is the vector with given values for the covariates. For example, $\tilde{x}_1 = (1, 0.5, 1, 10)'$ corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept.
 
-+ start with nba example
-+ for induced prior equations
-    - may not need all the equations
-    - give $\tilde{X}$, etc. with values from questions
-    - write transformations to turn into beta and tau
+This is all set up to induce the prior on $\beta$. We did this to have $\tilde{m} = \tilde{X}\beta$ so that $\beta = \tilde{X}^{-1}\tilde{m}$ ($\tilde{X}$ is the matrix whose rows are $\tilde{x}_j'$). Since we specified $\tilde{m}$ to be normal, $\beta$ will also be normal. We get the parameters by setting
+\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)'.\]
+This induces a normal prior on $\beta$. It will probably help to see this in the context of the data at hand.
+
+For the questions for $\beta$, these are the values I got:
+
+\[ \tilde{X} = \begin{pmatrix}
+  1 & 0.5 & 1 & 10 \\
+  1 & 1 & 1 & 20 \\
+  1 & 1 & 1 & 30 \\
+  1 & 2 & 2 & 30 
+  \end{pmatrix}, \hspace{5pt}
+  \tilde{Y} = \begin{pmatrix} 1 \\ 1.5 \\ 2.5 \\ 3  \end{pmatrix}, \hspace{5pt}
+  \tilde{w} = \begin{pmatrix} 2 \\ 2.5 \\ 3.5 \\ 4 \end{pmatrix}. \]
+
+We already saw the values in the first row of $\tilde{X}$ and the first components of $\tilde{Y}$ and $\tilde{w}$. Let's consider the last components. The question would be "What's the average number of personal fouls per game for someone who has 2 steals, 2 blocks, and plays 30 minutes?" The answer was "3-4" so $\tilde{Y}_4 = 3$ and $\tilde{w}_j = 4$.
+
+### Obtaining the Prior (in R)
 
 
 [^1]: You pick some arbitrary values.
