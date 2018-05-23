@@ -7,10 +7,9 @@ categories:
   - Bayesian Statistics
   - Linear Regression
 tags: []
-draft: true
 ---
 
-This is the first of two posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up a proper prior distribution using expert knowledge. The next post desrcibes how to sample from the posterior using a Gibbs sampler and using Stan.
+This is the first of two posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up a proper prior distribution using expert knowledge. The next post describes how to sample from the posterior using Gibbs sampling and using Stan.
 
 ### The Model
 
@@ -28,7 +27,7 @@ In other words, we model $Y$ as multivariate normal with mean vector $X\beta$ an
 
 ## The Prior
 
-Now that a model is specified for the data, we need to specify a prior distribution for the parameters. There is a lot of freedom here. We can use whatever prior  we think captures our prior information. However, we need to be able to obtain a sample from the posterior or we can't really do anything. Sometimes we use what's called an *improper* prior which is not actually a probabilty distribution but gives us a posterior that is. Here we consider a *proper* prior, so called because we specify a proper probability distribution. We use
+Now that a model is specified for the data, we need to specify a prior distribution for the parameters. There is a lot of freedom here. We can use whatever prior  we think captures our prior information. However, we need to be able to obtain a sample from the posterior or we can't really do anything. Sometimes we use what's called an *improper* prior which is not actually a probability distribution but gives us a posterior that is. Here we consider a *proper* prior, so called because we specify a proper probability distribution. We use
 
 \[ \beta \sim N_r(\beta_0, C), \hspace{10pt} \tau \sim \text{Gamma}(a,b). \]
 
@@ -65,7 +64,7 @@ The expert's answer was "1-2". This was great because it actually answers a seco
 
 We need to ask two questions here because $\beta$ has two parameters, the mean and precision. The answer to the first question gives us the mean, and the answer to the second, in combination with the first, gives us the variance. Luckily, both questions were answered in one shot. This series of questions was then repeated for different values of STL, BLK, and MIN[^1]. Since we have four $\beta$s here, we need to ask four questions.
 
-For the prior on $\tau$, the questions are a bit different. Instead of asking about the mean of the response (PF), we ask about the response itself. Depending on the expert and the data, it may be difficult to take this distinction into account. But we don't need a 'perfect' prior, we just need something that seems to reasonably caputre their knowledge. The questions we ask are:
+For the prior on $\tau$, the questions are a bit different. Instead of asking about the mean of the response (PF), we ask about the response itself. Depending on the expert and the data, it may be difficult to take this distinction into account. But we don't need a 'perfect' prior, we just need something that seems to reasonably capture their knowledge. The questions we ask are:
 
 >1. For someone with 2 steals, 2 blocks, and plays 30 minutes[^2], what is the biggest number of personal fouls you would expect?
 >2. What is the biggest that could be?
@@ -74,7 +73,7 @@ We might also clarify first question by adding something like "What is the numbe
 
 ### Obtaining the Prior
 
-Now that we have some numbers but how do we translate that into parameters for $\beta$ and $\tau$? We actually asked questions obout things that are easier to think about so we will need to apply some transformations to obtain the parameters we need.
+Now that we have some numbers but how do we translate that into parameters for $\beta$ and $\tau$? We actually asked questions about things that are easier to think about so we will need to apply some transformations to obtain the parameters we need.
 
 For $\tau$, we actually asked about the distribution of a percentile of the data. We set the answer to question 1 to the mode of the percentile, and the answer to question 2 as the 95th percentile of this percentile. We then use facts about normal percentiles and gamma distributions to transform these into the mode and 95th percentile of $\sigma$, $\sigma^2$, then finally $\tau$. It's a bit messy to think about but easy to implement in code.
 
@@ -158,6 +157,15 @@ beta_prior_var
 ```
 
 
+## Some Thoughts
+
+From here, we would want to go back to our expert and make sure the priors reflect their knowledge. We could show them a density plot of $\sigma$ for example and talk with them to see if it accurately reflects their beliefs. The $\beta$s will be harder because they are not as easy to think about. You may want to just examine them yourself and see if they seem reasonable based on your conversations with the expert. If you find they don't quite agree with the priors you have, adjust them, go back to the expert, and repeat until they are satisfied. Remember though, the prior doesn't need to be perfect, especially if you have a sizable amount of data. It just needs to reasonably capture the experts opinion.
+
+It should be noted that the method described here is fairly limiting. If we have a model with more than just a few covariates, it will probably be very difficult to obtain a prior this way. If we can find another source of the same data, we can use a reference prior on that and use the posterior as a prior for the data at hand. We could also use the method here on only some of the $\beta$s and a reference or a wide normal prior on the rest.
+
+Hopefully all this makes sense. It's not an easy task to set up a prior but you definitely should if you can. I suggest you try setting up a prior yourself in two different ways. On data where you are an expert, asking and answering the questions as though you were talking to an expert. And on data you know little about and thus need to talk to an expert in the area. This will help you get more familiar with the process and let you get practice asking the questions in a way the expert understands so they can provide you with useful answers.
+
+ 
 
 [^1]: You pick some arbitrary values.
 [^2]: Or 1 STL, 1 BLK, and 15 minutes. Again, the values are arbitrary here.
