@@ -76,8 +76,8 @@ nba</code></pre>
 <h3>Obtaining the Prior</h3>
 <p>Now that we have some numbers but how do we translate that into parameters for <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\tau\)</span>? We actually asked questions obout things that are easier to think about so we will need to apply some transformations to obtain the parameters we need.</p>
 <p>For <span class="math inline">\(\tau\)</span>, we actually asked about the distribution of a percentile of the data. We set the answer to question 1 to the mode of the percentile, and the answer to question 2 as the 95th percentile of this percentile. We then use facts about normal percentiles and gamma distributions to transform these into the mode and 95th percentile of <span class="math inline">\(\sigma\)</span>, <span class="math inline">\(\sigma^2\)</span>, then finally <span class="math inline">\(\tau\)</span>. It’s a bit messy to think about but easy to implement in code.</p>
-<p>For the <span class="math inline">\(\beta\)</span>s, the questions we ask give information about the conditional mean of the response given the number of steals, blocks, and minutes. Specifically, we asked about <span class="math inline">\(\tilde{m}_j = E[Y|\tilde{x}_j, \beta, \tau]\)</span> for <span class="math inline">\(j = 1,2,3,4\)</span> (1 for each <span class="math inline">\(\beta\)</span>). We assume that <span class="math display">\[ \tilde{m} = (\tilde{m}_1, \ldots, \tilde{m}_r)&#39; = \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})) \]</span> where <span class="math inline">\(D(\tilde{w})\)</span> is a diagonal matrix with <span class="math inline">\(\tilde{w}_j\)</span> as the entries. The components of <span class="math inline">\(\tilde{Y}\)</span> are the answers to the first question (average # of personal fouls for players with <span class="math inline">\(x\)</span> steals, <span class="math inline">\(y\)</span> blocks, and <span class="math inline">\(z\)</span> minutes play time). The <span class="math inline">\(\tilde{w}_j\)</span>s reflect the variability of the expert’s best guess. These are the answers to the “How big could that be” question. <span class="math inline">\(\tilde{x}_j\)</span> is the vector with given values for the covariates. For example, <span class="math inline">\(\tilde{x}_1 = (1, 0.5, 1, 10)&#39;\)</span> corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept.</p>
-<p>This is all set up to induce the prior on <span class="math inline">\(\beta\)</span>. We did this to have <span class="math inline">\(\tilde{m} = \tilde{X}\beta\)</span> so that <span class="math inline">\(\beta = \tilde{X}^{-1}\tilde{m}\)</span> (<span class="math inline">\(\tilde{X}\)</span> is the matrix whose rows are <span class="math inline">\(\tilde{x}_j&#39;\)</span>). Since we specified <span class="math inline">\(\tilde{m}\)</span> to be normal, <span class="math inline">\(\beta\)</span> will also be normal. We get the parameters by setting <span class="math display">\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)&#39;.\]</span> This induces a normal prior on <span class="math inline">\(\beta\)</span>. It will probably help to see this in the context of the data at hand.</p>
+<p>For the <span class="math inline">\(\beta\)</span>s, the questions we ask give information about the conditional mean of the response given the number of steals, blocks, and minutes. Specifically, we ask about <span class="math inline">\(\tilde{m}_j = E[Y|\tilde{x}_j, \beta, \tau] = \tilde{x}_j&#39;\beta\)</span> for <span class="math inline">\(j = 1,2,\ldots,r\)</span> (<span class="math inline">\(r=4\)</span> in this example) . The answers to these questions establish a prior on <span class="math inline">\(\tilde{m} = (\tilde{m}_1, \ldots, \tilde{m}_r)&#39;\)</span> which we assume to be normal: <span class="math display">\[  \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})). \]</span> Here <span class="math inline">\(D(\tilde{w})\)</span> is a diagonal matrix with <span class="math inline">\(\tilde{w}_j\)</span> as the entries. The components of <span class="math inline">\(\tilde{Y}\)</span> are the answers to the first question (average # of personal fouls for players with <span class="math inline">\(x\)</span> steals, <span class="math inline">\(y\)</span> blocks, and <span class="math inline">\(z\)</span> minutes play time). The <span class="math inline">\(\tilde{w}_j\)</span>s reflect the variability of the expert’s best guess. These are the answers to the “How big could that be” question. <span class="math inline">\(\tilde{x}_j\)</span> is the vector with given values for the covariates. For example, <span class="math inline">\(\tilde{x}_1 = (1, 0.5, 1, 10)&#39;\)</span> corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept.</p>
+<p>This is all set up to induce a prior on <span class="math inline">\(\beta\)</span>. <span class="math inline">\(\tilde{m}\)</span> is easier to ask questions about and the way it is set up we have <span class="math inline">\(\tilde{m} = \tilde{X}\beta\)</span> so that <span class="math inline">\(\beta = \tilde{X}^{-1}\tilde{m}\)</span> (<span class="math inline">\(\tilde{X}\)</span> is the matrix whose rows are <span class="math inline">\(\tilde{x}_j&#39;\)</span>). Since we specified <span class="math inline">\(\tilde{m}\)</span> to be normal, <span class="math inline">\(\beta\)</span> will also be normal. We get the parameters by setting <span class="math display">\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)&#39;.\]</span> This induces a normal prior on <span class="math inline">\(\beta\)</span>. It will probably help to see this in the context of the data at hand.</p>
 <p>For the questions for <span class="math inline">\(\beta\)</span>, these are the values I got:</p>
 <p><span class="math display">\[ \tilde{X} = \begin{pmatrix}
   1 &amp; 0.5 &amp; 1 &amp; 10 \\
@@ -91,6 +91,64 @@ nba</code></pre>
 </div>
 <div id="obtaining-the-prior-in-r" class="section level3">
 <h3>Obtaining the Prior (in R)</h3>
+<p>If you aren’t quite following, hopefully implementing this in code will help to make things clearer. We’ll start with the prior on <span class="math inline">\(\tau\)</span> because it’s a bit less involved. Below are the computations that perform the transformations mentioned earlier. We use two functions here. The first one, <code>norm_perc_to_sd</code> takes the mean and percentile of a normal distribution and outputs the standard deviation. We need to use this function twice. Once for the initial guess of the percentile, and one for the percentile of this. <code>tau_gamma_params</code> takes the mode and a percentile for a standard deviation <span class="math inline">\(\sigma\)</span> and returns the gamma parameters for the precision <span class="math inline">\(\tau\)</span>.</p>
+<pre class="r"><code># based on 2 STL, 2 BLK, 30 MIN
+norm_perc_to_sd &lt;- function(mean, percentile, p = 0.95){
+  sd = (percentile - mean) / qnorm(p)
+  return(sd)
+}
+
+# mean = 3 b/c Y_tilde_4 = 3
+sigma_mode &lt;- norm_perc_to_sd(mean = 3, percentile = 4.5)
+sigma_perc &lt;- norm_perc_to_sd(mean = 3, percentile = 5)
+
+tau_gamma_params &lt;- function(sigma_mode, sigma_perc, p = 0.95,a_start = 1, a_end = 1000, increment = 0.01){
+  a &lt;- seq(a_start, a_end, increment)
+  b &lt;- sigma_mode^2 * (a + 1)
+  index &lt;- which.max(qgamma(1-p, a, b) &gt; 1 / sigma_perc^2)
+  out &lt;- data.frame(shape = a[index], rate = b[index])
+  return(out)
+}
+
+gamma_params &lt;- tau_gamma_params(sigma_mode = sigma_mode, sigma_perc = sigma_perc)
+tau_prior_shape &lt;- gamma_params$shape
+tau_prior_rate &lt;- gamma_params$rate
+tau_prior_shape</code></pre>
+<pre><code>## [1] 13.88</code></pre>
+<pre class="r"><code>tau_prior_rate</code></pre>
+<pre><code>## [1] 12.37459</code></pre>
+<p>That takes care of <span class="math inline">\(\tau\)</span> so now let’s get the prior for <span class="math inline">\(\beta\)</span>. We use another function here, <code>norm_params</code>, which takes the mean and percentile for a normal distribution and returns the normal parameters for a mean. We use this to compute the variances for the matrix <span class="math inline">\(D\)</span>. Note that when we create the <span class="math inline">\(\tilde{X}\)</span> matrix, we should check that it has full rank as all the above assumes this.</p>
+<pre class="r"><code>norm_params &lt;- function(mean, percentile, p = 0.95){
+  sd &lt;- 1 / ( qnorm(p) / (percentile - mean) )
+  out &lt;- data.frame(mu = mean, sigma = sd)
+  return(out)
+}
+
+x_tilde &lt;- matrix(c(1, 0.5, 1, 10, 1, 1, 1, 20, 1, 1, 1, 30, 1, 2, 2, 30),
+                  nrow = 4, byrow = TRUE)
+y_tilde &lt;- c(1, 1.5, 2.5, 3)  # best guess
+w_tilde &lt;- c(2, 2.5, 3.5, 4)  # guess for .95 quantile
+D &lt;- diag(4)
+for (i in 1:4){
+  D[i, i] &lt;- norm_params(mean = y_tilde[i], percentile = w_tilde[i])$sigma^2
+}
+
+x_tilde_inv &lt;- solve(x_tilde)
+beta_prior_mean &lt;- x_tilde_inv %*% y_tilde
+beta_prior_var &lt;- x_tilde_inv %*% D %*% t(x_tilde_inv)
+
+beta_prior_mean</code></pre>
+<pre><code>##      [,1]
+## [1,] -1.0
+## [2,] -1.0
+## [3,]  1.5
+## [4,]  0.1</code></pre>
+<pre class="r"><code>beta_prior_var</code></pre>
+<pre><code>##            [,1]       [,2]       [,3]        [,4]
+## [1,]  4.0657266  5.1745611 -5.1745611 -0.14784460
+## [2,]  5.1745611  8.8706762 -8.1314532 -0.22176691
+## [3,] -5.1745611 -8.1314532  8.1314532  0.18480575
+## [4,] -0.1478446 -0.2217669  0.1848058  0.00739223</code></pre>
 </div>
 </div>
 <div class="footnotes">
