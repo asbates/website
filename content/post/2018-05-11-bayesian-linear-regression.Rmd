@@ -6,10 +6,12 @@ slug: bayesian-linear-regression
 categories:
   - Bayesian Statistics
   - Linear Regression
-tags: []
+tags: [Bayesian Statistics]
 ---
 
 This is the first of two posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up the prior distribution using expert knowledge. The next post describes how to sample from the posterior using Gibbs sampling and using Stan.
+
+Update: Actually, I got pretty busy and didn't get around to the second post. I hope to come back to it later but for now it's not going to happen.
 
 ## The Model
 
@@ -80,7 +82,7 @@ For the $\beta$s, the questions we ask give information about the conditional me
 \[  \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})). \]
 Here $D(\tilde{w})$ is a diagonal matrix with $\tilde{w}_j$ as the entries. The components of $\tilde{Y}$ are the answers to the first question (average # of personal fouls for players with $x$ steals, $y$ blocks, and $z$ minutes play time). The $\tilde{w}_j$s reflect the variability of the expert's best guess. These are the answers to the "How big could that be" question. $\tilde{x}_j$ is the vector with given values for the covariates. For example, $\tilde{x}_1 = (1, 0.5, 1, 10)'$ corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept.
 
-This is all set up to induce a prior on $\beta$. $\tilde{m}$ is easier to ask questions about and the way it is set up we have $\tilde{m} = \tilde{X}\beta$ so that $\beta = \tilde{X}^{-1}\tilde{m}$ ($\tilde{X}$ is the matrix whose rows are $\tilde{x}_j'$). Since we specified $\tilde{m}$ to be normal, $\beta$ will also be normal. We get the parameters by setting
+This is all set up to *induce* a prior on $\beta$. $\tilde{m}$ is easier to ask questions about and the way it is set up we have $\tilde{m} = \tilde{X}\beta$ so that $\beta = \tilde{X}^{-1}\tilde{m}$ ($\tilde{X}$ is the matrix whose rows are $\tilde{x}_j'$). Since we specified $\tilde{m}$ to be normal, $\beta$ will also be normal. We get the parameters by setting
 \[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)'.\]
 This induces a normal prior on $\beta$. It will probably help to see this in the context of the data at hand.
 
@@ -160,7 +162,7 @@ beta_prior_var
 
 From here, we would want to go back to our expert and make sure the priors reflect their knowledge. We could show them a density plot of $\sigma$ for example and talk with them to see if it accurately reflects their beliefs. The $\beta$s will be harder because they are not as easy to think about. You may want to just examine them yourself and see if they seem reasonable based on your conversations with the expert. If you find they don't quite agree with the priors you have, adjust them, go back to the expert, and repeat until they are satisfied. Remember though, the prior doesn't need to be perfect, especially if you have a sizable amount of data. It just needs to reasonably capture the experts opinion.
 
-It should be noted that the method described here is fairly limiting. If we have a model with more than just a few covariates, it will probably be very difficult to obtain a prior this way. If we can find another source of the same data, we can use a reference prior on that and use the posterior as a prior for the data at hand. We could also use the method here on only some of the $\beta$s and a reference or a wide normal prior on the rest.
+It should be noted that the method described here is fairly limiting. If we have a model with more than just a few covariates, it will probably be very difficult to obtain a prior this way. If we can find another source of the same data, we can use a reference prior on that and use the posterior as a prior for the data at hand. Or we could just use a reference prior but this doesn't take into account expert knowledge which we should try to incorporate because that's kind of the point of Bayesian statistics. We could also use the method here on only some of the $\beta$s and a reference or a wide normal prior on the rest. Basically, we want to capture as much expert knowledge as we can without being too cumbersome.
 
 Hopefully all this makes sense. It's not an easy task to set up a prior but you definitely should if you can. I suggest you try setting up a prior yourself in two different ways. On data where you are an expert, asking and answering the questions as though you were talking to an expert. And on data you know little about and thus need to talk to an expert in the area. This will help you get more familiar with the process and let you get practice asking the questions in a way the expert understands so they can provide you with useful answers.
 

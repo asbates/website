@@ -6,12 +6,13 @@ slug: bayesian-linear-regression
 categories:
   - Bayesian Statistics
   - Linear Regression
-tags: []
+tags: [Bayesian Statistics]
 ---
 
 
 
 <p>This is the first of two posts on Bayesian linear regression with a proper prior. In this post I give an overview of the model and how to set up the prior distribution using expert knowledge. The next post describes how to sample from the posterior using Gibbs sampling and using Stan.</p>
+<p>Update: Actually, I got pretty busy and didn’t get around to the second post. I hope to come back to it later but for now it’s not going to happen.</p>
 <div id="the-model" class="section level2">
 <h2>The Model</h2>
 <p>In Bayesian linear regression, we model the data as</p>
@@ -39,16 +40,16 @@ nba</code></pre>
 <pre><code>## # A tibble: 492 x 4
 ##       PF   STL   BLK   MIN
 ##    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-##  1 0.600 0.300 0     12.4 
-##  2 2.30  0.700 0.200 23.0 
-##  3 1.80  0.400 0.500 17.0 
-##  4 2.80  0.600 0.300 23.1 
-##  5 1.60  0.900 1.30  30.5 
-##  6 2.10  0.700 1.30  30.6 
-##  7 1.90  0.900 0.800 18.5 
-##  8 2.00  0.800 0.100 23.6 
-##  9 2.40  0.600 0.200 33.3 
-## 10 0.200 0     0      2.80
+##  1   0.6   0.3   0    12.4
+##  2   2.3   0.7   0.2  23  
+##  3   1.8   0.4   0.5  17  
+##  4   2.8   0.6   0.3  23.1
+##  5   1.6   0.9   1.3  30.5
+##  6   2.1   0.7   1.3  30.6
+##  7   1.9   0.9   0.8  18.5
+##  8   2     0.8   0.1  23.6
+##  9   2.4   0.6   0.2  33.3
+## 10   0.2   0     0     2.8
 ## # ... with 482 more rows</code></pre>
 <div id="the-questions" class="section level3">
 <h3>The Questions</h3>
@@ -75,7 +76,7 @@ nba</code></pre>
 <p>Now we have some numbers but how do we translate that into parameters for <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\tau\)</span>? We actually asked questions about things that are easier to think about so we will need to apply some transformations to obtain the parameters we need.</p>
 <p>For <span class="math inline">\(\tau\)</span>, we actually asked about the distribution of a percentile of the data. We set the answer to question 1 to the mode of the percentile, and the answer to question 2 as the 95th percentile of this percentile. We then use facts about normal percentiles and gamma distributions to transform these into the mode and 95th percentile of <span class="math inline">\(\sigma\)</span>, <span class="math inline">\(\sigma^2\)</span>, then finally <span class="math inline">\(\tau\)</span>. It’s a bit messy to think about but easy to implement in code.</p>
 <p>For the <span class="math inline">\(\beta\)</span>s, the questions we ask give information about the conditional mean of the response given the number of steals, blocks, and minutes. Specifically, we ask about <span class="math inline">\(\tilde{m}_j = E[Y|\tilde{x}_j, \beta, \tau] = \tilde{x}_j&#39;\beta\)</span> for <span class="math inline">\(j = 1,2,\ldots,r\)</span> (<span class="math inline">\(r=4\)</span> in this example) . The answers to these questions establish a prior on <span class="math inline">\(\tilde{m} = (\tilde{m}_1, \ldots, \tilde{m}_r)&#39;\)</span> which we assume to be normal: <span class="math display">\[  \tilde{m} \sim N_r(\tilde{Y}, D(\tilde{w})). \]</span> Here <span class="math inline">\(D(\tilde{w})\)</span> is a diagonal matrix with <span class="math inline">\(\tilde{w}_j\)</span> as the entries. The components of <span class="math inline">\(\tilde{Y}\)</span> are the answers to the first question (average # of personal fouls for players with <span class="math inline">\(x\)</span> steals, <span class="math inline">\(y\)</span> blocks, and <span class="math inline">\(z\)</span> minutes play time). The <span class="math inline">\(\tilde{w}_j\)</span>s reflect the variability of the expert’s best guess. These are the answers to the “How big could that be” question. <span class="math inline">\(\tilde{x}_j\)</span> is the vector with given values for the covariates. For example, <span class="math inline">\(\tilde{x}_1 = (1, 0.5, 1, 10)&#39;\)</span> corresponding to 0.5 steals, 1 block, and 10 minutes, plus the intercept.</p>
-<p>This is all set up to induce a prior on <span class="math inline">\(\beta\)</span>. <span class="math inline">\(\tilde{m}\)</span> is easier to ask questions about and the way it is set up we have <span class="math inline">\(\tilde{m} = \tilde{X}\beta\)</span> so that <span class="math inline">\(\beta = \tilde{X}^{-1}\tilde{m}\)</span> (<span class="math inline">\(\tilde{X}\)</span> is the matrix whose rows are <span class="math inline">\(\tilde{x}_j&#39;\)</span>). Since we specified <span class="math inline">\(\tilde{m}\)</span> to be normal, <span class="math inline">\(\beta\)</span> will also be normal. We get the parameters by setting <span class="math display">\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)&#39;.\]</span> This induces a normal prior on <span class="math inline">\(\beta\)</span>. It will probably help to see this in the context of the data at hand.</p>
+<p>This is all set up to <em>induce</em> a prior on <span class="math inline">\(\beta\)</span>. <span class="math inline">\(\tilde{m}\)</span> is easier to ask questions about and the way it is set up we have <span class="math inline">\(\tilde{m} = \tilde{X}\beta\)</span> so that <span class="math inline">\(\beta = \tilde{X}^{-1}\tilde{m}\)</span> (<span class="math inline">\(\tilde{X}\)</span> is the matrix whose rows are <span class="math inline">\(\tilde{x}_j&#39;\)</span>). Since we specified <span class="math inline">\(\tilde{m}\)</span> to be normal, <span class="math inline">\(\beta\)</span> will also be normal. We get the parameters by setting <span class="math display">\[ \beta_0 = \tilde{X}^{-1}\tilde{Y}, \hspace{10pt} C = \tilde{X}^{-1}D(\tilde{w})\left(\tilde{X}^{-1}\right)&#39;.\]</span> This induces a normal prior on <span class="math inline">\(\beta\)</span>. It will probably help to see this in the context of the data at hand.</p>
 <p>For the questions for <span class="math inline">\(\beta\)</span>, these are the values I got:</p>
 <p><span class="math display">\[ \tilde{X} = \begin{pmatrix}
   1 &amp; 0.5 &amp; 1 &amp; 10 \\
@@ -152,7 +153,7 @@ beta_prior_mean</code></pre>
 <div id="remarks" class="section level2">
 <h2>Remarks</h2>
 <p>From here, we would want to go back to our expert and make sure the priors reflect their knowledge. We could show them a density plot of <span class="math inline">\(\sigma\)</span> for example and talk with them to see if it accurately reflects their beliefs. The <span class="math inline">\(\beta\)</span>s will be harder because they are not as easy to think about. You may want to just examine them yourself and see if they seem reasonable based on your conversations with the expert. If you find they don’t quite agree with the priors you have, adjust them, go back to the expert, and repeat until they are satisfied. Remember though, the prior doesn’t need to be perfect, especially if you have a sizable amount of data. It just needs to reasonably capture the experts opinion.</p>
-<p>It should be noted that the method described here is fairly limiting. If we have a model with more than just a few covariates, it will probably be very difficult to obtain a prior this way. If we can find another source of the same data, we can use a reference prior on that and use the posterior as a prior for the data at hand. We could also use the method here on only some of the <span class="math inline">\(\beta\)</span>s and a reference or a wide normal prior on the rest.</p>
+<p>It should be noted that the method described here is fairly limiting. If we have a model with more than just a few covariates, it will probably be very difficult to obtain a prior this way. If we can find another source of the same data, we can use a reference prior on that and use the posterior as a prior for the data at hand. Or we could just use a reference prior but this doesn’t take into account expert knowledge which we should try to incorporate because that’s kind of the point of Bayesian statistics. We could also use the method here on only some of the <span class="math inline">\(\beta\)</span>s and a reference or a wide normal prior on the rest. Basically, we want to capture as much expert knowledge as we can without being too cumbersome.</p>
 <p>Hopefully all this makes sense. It’s not an easy task to set up a prior but you definitely should if you can. I suggest you try setting up a prior yourself in two different ways. On data where you are an expert, asking and answering the questions as though you were talking to an expert. And on data you know little about and thus need to talk to an expert in the area. This will help you get more familiar with the process and let you get practice asking the questions in a way the expert understands so they can provide you with useful answers.</p>
 </div>
 <div class="footnotes">
