@@ -8,6 +8,12 @@ These are some of my previous/current projects. Some of the current projects I a
 # Current
 
 
+* R workshops
+  + I'm doing a series of R workshops for the Society of Statisticians and Actuaries at SDSU.
+  + For this semester it's introduction to R, dplyr, and ggplot2.
+  + Next semester I'm hoping to do Git/GitHub, more tidyverse, blogdown, and SQL.
+  + All the materials are available [here](https://github.com/asbates/ssa_r_workshops).
+
 * R package
   + I'm making an R package to implement some recent advancements in Bayesian statistics.
   + The heavy computation is being implemented in C++ via Rcpp and RcppEigen.
