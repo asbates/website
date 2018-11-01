@@ -7,14 +7,24 @@ These are some of my previous/current projects. Some of the current projects I a
 
 # Current
 
+
+* R package
+  + I'm making an R package to implement some recent advancements in Bayesian statistics.
+  + The heavy computation is being implemented in C++ via Rcpp and RcppEigen.
+  + My advisor isn't ready to make it public yet but I'm trying to make this happen ASAP.
+  
+  
 * This website
     + My main goal is to get more posts up, mostly tutorials and some data analyses.
     + I would also like to get a better understanding of how exactly Hugo and Blogdown work.
-    
+
+<!--
 * Bayesian Python
     + I have two goals for this project: (1) learn more Python and (2) develop a set of  functions to implement some of the models covered in a Bayesian statistics course I recently took.
     + The GitHub repository can be found [here](https://github.com/asbates/bayes-stats). There isn't much to it now because of higher priorities but hopefully I can get more done soon.
-    
+-->
+
+
     
 # Previous
     
