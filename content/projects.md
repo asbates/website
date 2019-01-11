@@ -10,14 +10,15 @@ These are some of my previous/current projects. Some of the current projects I a
 
 * R workshops
   + I'm doing a series of R workshops for the Society of Statisticians and Actuaries at SDSU.
-  + For this semester it's introduction to R, dplyr, and ggplot2.
-  + Next semester I'm hoping to do Git/GitHub, more tidyverse, blogdown, and SQL.
+  + In fall 2018 it was introduction to R, dplyr, and ggplot2.
+  + In the spring I'm hoping to do Git/GitHub, more tidyverse, blogdown, and SQL.
   + All the materials are available [here](https://github.com/asbates/ssa_r_workshops).
 
 * R package
-  + I'm making an R package to implement some recent advancements in Bayesian statistics.
+  + I'm currently working on an R package implementing some recent research in Bayesian statistics.
+  + It uses Markov chains that converge geometrically (read: fast) which allows us to estimate things like MCMC standard errors.
   + The heavy computation is being implemented in C++ via Rcpp and RcppEigen.
-  + My advisor isn't ready to make it public yet but I'm trying to make this happen ASAP.
+  + You can find it on my GitHub [here](https://github.com/asbates/geblm).
   
   
 * This website
