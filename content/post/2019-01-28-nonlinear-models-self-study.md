@@ -22,7 +22,9 @@ So what will I be studying? Mostly nonlinear models but that's sort of just the 
 
 For the first part of the semester I'm going to focus on *splines* of various varieties, *generalized additive models*, and possibly *neural networks*. While I do have some exposure to all of these I've never really covered them in any depth. I sort of know the basic ideas behind them but haven't looked at the theory or applied them to data. Theory you say? Yes, theory. I probably won't go into too much depth but I would like to understand the theory behind the models. What I mean by that is I don't plan on doing a bunch of proofs but I will look at some equations and possibly derive some results. This may not be for everyone but I find it hard to fit models without having at least *some* exposure to the underlying theory. It helps me understand what's going on. After that, who knows. I want to see how to extend these models to time series. Then maybe I'll look into some other models and apply them to time series. How much material I cover mostly depends on how much time I have.
 
+
 I plan on writing posts here for everything that I study. Some will probably focus on theory, some will demonstrate how to fit a particular model in R, some might just be my thoughts on a given class of models. Hopefully this will help other people interested in nonlinear models. But mostly writing everything up is to help me learn and for reference for my future self. If you're interested in what I am doing feel free to reach out with questions/comments/corrections at <andrewbates73@gmail.com>. I also have a GitHub [repository](https://github.com/asbates/nonlinear-models) for all the code and such I will use.
+
 
 
 
