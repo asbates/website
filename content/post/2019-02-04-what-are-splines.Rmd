@@ -63,7 +63,7 @@ ggplot(df, aes(x,y)) +
 ```
 
 
-"But wait" you say, "why don't we just use polynomial terms in linear regression and forget about the whole spline business?" Well for one, splines can often perform better. They need a lower degree polynomial to achieve the same level of flexibility. A polynomial regression might need a high degree to achieve a good fit. Whereas with a spline, we can use lower degree polynomials with more knots. This makes splines more stable than polynomial regression. Gareth, et al. discuss this a bit more in Section 7.4.5 of An introduction to statistical learning. Actually, polynomial regression and splines are part of a larger class of models that are based on the same underlying idea: **basis functions**.
+"But wait" you say, "why don't we just use polynomial terms in linear regression and forget about the whole spline business?" Well for one, splines can often perform better. They need a lower degree polynomial to achieve the same level of flexibility. A polynomial regression might need a high degree to achieve a good fit. Whereas with a spline, we can use lower degree polynomials with more knots. This makes splines more stable than polynomial regression. Gareth, et al. discuss this a bit more in Section 7.4.5 of [An Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/). Actually, polynomial regression and splines are part of a larger class of models that are based on the same underlying idea: **basis functions**.
 
 ### Basis Functions
 
@@ -78,7 +78,7 @@ f(X) = \sum_{i=1}^k \beta_k h_k(X).
 \]
 Here, the $\beta$s are the coefficients and the $h(X)$s are the basis functions. In terms of the $h(X)$s, this is a linear model. Nonlinearity is introduced by choosing nonlinear functions for the $h(X)$s. Neural networks take the opposite approach. For neural networks we first take a linear combination of the coefficients and inputs and then we apply a nonlinear function to that. In the basis function approach we first apply nonlinear functions and then take a linear combination with the coefficients.
 
-What kinds of functions can we use for the $h(X)$s? Hastie, et al. give a number of examples in The Elements of Statistical Learning that should feel very familiar. If we take $h_k(X) = x_k$ for each $x_k$, we are back to regular old linear regression. A common extension to this is $h_k(X) = \log(x_j)$, taking the log transform of one or more input variables. Again, we could use fancy functions like Fourier terms but we will save that for later.
+What kinds of functions can we use for the $h(X)$s? Hastie, et al. give a number of examples in [The Elements of Statistical Learning](https://web.stanford.edu/~hastie/ElemStatLearn/) that should feel very familiar. If we take $h_k(X) = x_k$ for each $x_k$, we are back to regular old linear regression. A common extension to this is $h_k(X) = \log(x_j)$, taking the log transform of one or more input variables. Again, we could use fancy functions like Fourier terms but we will save that for later.
 
 So what are the basis functions for splines? Let's say we want to use cubic splines as these are the most common. As noted before, these are basically a cubic polynomial with additional conditions for continuity. The first part of a cubic spline basis is the regular polynomial basis: $1, x, x^2, x^3$. Then we tack on a basis function of the form
 \[
