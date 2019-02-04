@@ -1,0 +1,64 @@
+---
+title: 'Splines: What Are They?'
+author: ''
+date: '2019-02-04'
+slug: what-are-splines
+categories:
+  - nonlinear models
+  - R
+  - splines
+tags:
+  - R
+  - nonlinear models
+  - splines
+---
+
+
+
+<p>In a <a href="/2019/01/28/nonlinear-models-self-study/">previous post</a> I talked about how I am taking a self study course on nonlinear models. This is the first post on the topic with “real” content. The first topic I’ll be studying is splines. Here, I just want to provide an overview of splines. In future posts I will talk about different types of splines and provide some examples. Most of the material in this post is based on Chapter 7 of <a href="http://www-bcf.usc.edu/~gareth/ISL/">An Introduction to Statistical Learning</a> and Chapter 5 of <a href="https://web.stanford.edu/~hastie/ElemStatLearn/">The Elements of Statistical Learning</a>.</p>
+<div id="the-basic-idea" class="section level3">
+<h3>The Basic Idea</h3>
+<p>So what are splines? Essentially they are just piecewise polynomials with some smoothness conditions. We break the data into sections and fit polynomials to the data in each one of these sections.</p>
+<p>The chunks are defined by <strong>knots</strong>. Knots can be any point but we usually use points in the data. For example, let’s say we have data that ranges from 1 to 10. Let’s also suppose we have data points at 2 and 6 and we use these as knots. These knots split our data into 3 chunks: points less than 2, points between 2 and 6, and points bigger than 6. We then fit polynomials to each one of these data chunks. This idea might be easier to see in a picture:</p>
+<p><img src="/post/2019-02-04-what-are-splines_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>The vertical lines indicate where the knots are<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.</p>
+<p>To be splines though, we need some additional conditions. Instead of using <em>any</em> polynomial, we restrict our attention to polynomials that have continuous derivatives, up to a certain order, at each knot. So a spline is a polynomial of degree <span class="math inline">\(d\)</span> that has continuous derivatives up to order <span class="math inline">\(d-1\)</span> at each of the knots. That is, the first derivative is continuous, the second derivative is continuous, …, the <span class="math inline">\(d-1\)</span>st derivative is continuous.</p>
+<p>So in the plot above, we would fit one of these polynomials to the left chunk, the middle chunk, and the right chunk. The continuity restriction is to make sure the final fit is smooth. That it doesn’t have kinks<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>. A fitted spline model might look something like this:</p>
+<p><img src="/post/2019-02-04-what-are-splines_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>“But wait” you say, “why don’t we just use polynomial terms in linear regression and forget about the whole spline business?” Well for one, splines can often perform better. They need a lower degree polynomial to achieve the same level of flexibility. A polynomial regression might need a high degree to achieve a good fit. Whereas with a spline, we can use lower degree polynomials with more knots. This makes splines more stable than polynomial regression. Gareth, et al. discuss this a bit more in Section 7.4.5 of An introduction to statistical learning. Actually, polynomial regression and splines are part of a larger class of models that are based on the same underlying idea: <strong>basis functions</strong>.</p>
+</div>
+<div id="basis-functions" class="section level3">
+<h3>Basis Functions</h3>
+<p>Basis functions generalize linear regression by allowing us to fit a linear model to nonlinear functions of the input data. We specify a set of basis functions, use them to transform the inputs, and then use these transformed variables as inputs to a linear model. The term basis in this context is just like the term basis from linear algebra. The set of functions we use define the basis of a vector space. In polynomial regression the basis functions are <span class="math inline">\(1, x, x^2, ..., x^d\)</span>. We could also use fancier functions like trigonometric polynomials (a la Fourier) or wavelets. But this post is about splines so let’s see what spline basis functions look like.</p>
+</div>
+<div id="some-math" class="section level3">
+<h3>Some Math</h3>
+<p>Alright, now that we know the basic idea, let’s talk about some of the math behind splines. We’ll start by getting a feel for the basis function approach and then look at splines as a particular case. From this viewpoint, we are trying to estimate a model of the form <span class="math display">\[
+f(X) = \sum_{i=1}^k \beta_k h_k(X).
+\]</span> Here, the <span class="math inline">\(\beta\)</span>s are the coefficients and the <span class="math inline">\(h(X)\)</span>s are the basis functions. In terms of the <span class="math inline">\(h(X)\)</span>s, this is a linear model. Nonlinearity is introduced by choosing nonlinear functions for the <span class="math inline">\(h(X)\)</span>s. Neural networks take the opposite approach. For neural networks we first take a linear combination of the coefficients and inputs and then we apply a nonlinear function to that. In the basis function approach we first apply nonlinear functions and then take a linear combination with the coefficients.</p>
+<p>What kinds of functions can we use for the <span class="math inline">\(h(X)\)</span>s? Hastie, et al. give a number of examples in The Elements of Statistical Learning that should feel very familiar. If we take <span class="math inline">\(h_k(X) = x_k\)</span> for each <span class="math inline">\(x_k\)</span>, we are back to regular old linear regression. A common extension to this is <span class="math inline">\(h_k(X) = \log(x_j)\)</span>, taking the log transform of one or more input variables. Again, we could use fancy functions like Fourier terms but we will save that for later.</p>
+<p>So what are the basis functions for splines? Let’s say we want to use cubic splines as these are the most common. As noted before, these are basically a cubic polynomial with additional conditions for continuity. The first part of a cubic spline basis is the regular polynomial basis: <span class="math inline">\(1, x, x^2, x^3\)</span>. Then we tack on a basis function of the form <span class="math display">\[
+h(x, \xi) = (x = \xi)_{+}^3 = 
+  \begin{cases}
+  (x - \xi)^3 &amp; \text{if  } x &gt; \xi \\
+  0 &amp; \text{if  } x \le \xi.
+  \end{cases}
+\]</span> <span class="math inline">\(\xi\)</span> stands for a knot. For each knot, we need to add one of these terms. The <span class="math inline">\(+\)</span> means we only want to keep this term if <span class="math inline">\(x\)</span> is larger than the knot <span class="math inline">\(\xi\)</span>. This takes care of the piecewise part, fitting a polynomial in a particular chunk of the data. Apparently, it also takes care of the continuity requirement. Let’s suppose were want to fit a cubic spline using two knots (as in the graphs we saw previously). Then the full set of basis functions would be <span class="math display">\[
+\begin{align*}
+ h_1(X) &amp;= 1 &amp; h_2(X) &amp;= X  &amp; h_3(X) &amp;= X^2 \\
+ h_4(X) &amp;= X^3 &amp; h_5(X) &amp;= (X - \xi_1)^3_{+} &amp; h_6(X) &amp;= (X - \xi_2)^3_{+}.
+\end{align*}
+\]</span> If we wanted to use a degree <span class="math inline">\(d\)</span> polynomial, then we would have <span class="math inline">\(1, X, ..., X^d\)</span> along with <span class="math inline">\((X-\xi_1)^d_{+}\)</span> and <span class="math inline">\((X-\xi_2)^d_{+}\)</span>. And if we wanted to include <span class="math inline">\(k\)</span> knots we would also need to add <span class="math inline">\((X-\xi_i)^d_{+}\)</span> for <span class="math inline">\(i = 3, 4, ..., k\)</span>.</p>
+</div>
+<div id="recap" class="section level3">
+<h3>Recap</h3>
+<p>Let’s summarize what we’ve seen so far. We talked about the basic idea behind splines: split the data into chunks and fit polynomials, with smoothness conditions, to each chunk. We can think of splines as extending polynomial regression which we often see in the context of linear regression. More generally, we can apply a set of (non)linear functions to the model inputs and then fit a linear model to the result. Lastly, we talked a bit about the math behind this idea and what the basis functions are for cubic splines with 2 knots and degree <span class="math inline">\(d\)</span> splines with any number of knots.</p>
+<p>If you find yourself wanting more spline goodness, don’t fret. We will be taking a deeper dive into splines in the coming weeks. And of course, we will get to see splines in action when we start fitting them to some data.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Of course, these aren’t the same numbers mentioned before.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>Actually, it could have kinks because a line is a polynomial. But we usually use higher order polynomials.<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
