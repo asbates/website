@@ -208,9 +208,9 @@ class: center, middle
 
 These slides were created with the R package [**xaringan**](https://github.com/yihui/xaringan).
 
-You can find them at
+You can find them at [https://asbates.rbind.io/slides/rcpp-intro](https://asbates.rbind.io/slides/rcpp-intro)
 
-You can find code for the examples at 
+You can find code for the examples at [https://github.com/asbates/neural-nets/tree/master/rcpp-intro](https://github.com/asbates/neural-nets/tree/master/rcpp-intro) 
 
 
 
