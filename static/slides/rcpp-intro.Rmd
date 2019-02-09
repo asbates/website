@@ -1,0 +1,216 @@
+---
+title: "An Introduction to Rcpp"
+subtitle: "Stat 696: Machine Learning"
+author: "Andrew Bates"
+date: "02/14/2019"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+# What Is Rcpp?
+
+--
+
+An R package connecting R and C++
+
+--
+
+You write C++ code
+
+--
+
+Rcpp handles the details
+
+
+---
+
+# Why Would I Use It?
+
+--
+
+You have some R code but...
+
+--
+
+It's too slow
+
+--
+
+You've tried vectorizing, etc.
+
+--
+
+It's still too slow
+
+--
+
+Some use cases (from [Advanced R](http://adv-r.had.co.nz/Rcpp.html))
+
+- Loops that can't be vectorized (e.g. MCMC)
+- Need to call R functions millions of times (e.g. recursive functions)
+- Need complex data structures not available in R
+
+---
+
+# A First Example
+
+Write some C++ code
+
+--
+
+```{Rcpp, cache = TRUE}
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+NumericVector square_root(NumericVector x) {
+  return sqrt(x);
+}
+```
+
+--
+
+Then call it from R
+
+--
+
+```{r }
+x <- 1:5
+square_root(x)
+```
+
+
+---
+
+# Let's Break It Down
+
+```{Rcpp, eval = FALSE}
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+NumericVector square_root(NumericVector x) {
+  return sqrt(x);
+}
+```
+
+--
+
+.pull-left[
+
+- `#include <Rcpp.h>`
+
+- `using namespace Rcpp;`
+
+- `// [[Rcpp::export]]`
+ 
+- `NumericVector square_root(...`
+
+]
+
+.pull-right[
+
+- like `library(mypackage)`
+
+- so we don't have to write `package::function`
+
+- send function to R
+
+- function definition
+
+]
+
+???
+things to note:
+1. semicolons
+2. need to specify types
+
+---
+
+# A More Realistic Example
+
+Draw sample from multivariate normal
+
+```{Rcpp, cache = TRUE}
+#include <RcppEigen.h>
+// [[Rcpp::depends(RcppEigen)]]
+
+using namespace Rcpp;
+using namespace Eigen;
+
+// [[Rcpp::export]]
+VectorXd mv_normal(VectorXd mu, MatrixXd sigma){
+  int r = mu.size();
+  VectorXd standard_normal(r);
+  VectorXd result(r);
+
+  standard_normal = as<VectorXd>(rnorm(r, 0, 1));
+  result = mu + sigma.llt().matrixL() * standard_normal;
+  return result;
+}
+```
+
+
+???
+things to note:
+1. using RcppEigen - wrapper for Eigen C++ library for linear algebra
+2. `rnorm` is part of Rcpp sugar - C++ functions that will be familiar to R users
+3. using Cholesky decomposition
+
+---
+
+# A More Realistic Example
+
+In R:
+
+```{r}
+mu <- c(4,4)
+sigma <- diag(2) * 2
+mv_normal(mu, sigma)
+```
+
+
+---
+
+class: middle
+
+Let's see this in action!
+
+
+---
+
+# Resources
+
+[Rcpp.org](http://www.rcpp.org)
+
+[Rcpp Gallery](http://gallery.rcpp.org) - *lots* of examples
+
+Rcpp chapter of [Advanced R](http://adv-r.had.co.nz/Rcpp.html)
+
+Compiled Code chapter of [R Packages](http://r-pkgs.had.co.nz/src.html)
+
+
+
+---
+
+class: center, middle
+
+# Happy Rcpping!
+
+These slides were created with the R package [**xaringan**](https://github.com/yihui/xaringan).
+
+You can find them at
+
+You can find code for the examples at 
+
+
+

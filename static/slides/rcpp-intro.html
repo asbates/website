@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>An Introduction to Rcpp</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Andrew Bates" />
+    <meta name="date" content="2019-02-14" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# An Introduction to Rcpp
+## Stat 696: Machine Learning
+### Andrew Bates
+### 02/14/2019
+
+---
+
+
+
+
+# What Is Rcpp?
+
+--
+
+An R package connecting R and C++
+
+--
+
+You write C++ code
+
+--
+
+Rcpp handles the details
+
+
+---
+
+# Why Would I Use It?
+
+--
+
+You have some R code but...
+
+--
+
+It's too slow
+
+--
+
+You've tried vectorizing, etc.
+
+--
+
+It's still too slow
+
+--
+
+Some use cases (from [Advanced R](http://adv-r.had.co.nz/Rcpp.html))
+
+- Loops that can't be vectorized (e.g. MCMC)
+- Need to call R functions millions of times (e.g. recursive functions)
+- Need complex data structures not available in R
+
+---
+
+# A First Example
+
+Write some C++ code
+
+--
+
+
+```cpp
+#include &lt;Rcpp.h&gt;
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+NumericVector square_root(NumericVector x) {
+  return sqrt(x);
+}
+```
+
+--
+
+Then call it from R
+
+--
+
+
+```r
+x &lt;- 1:5
+square_root(x)
+```
+
+```
+## [1] 1.000000 1.414214 1.732051 2.000000 2.236068
+```
+
+
+---
+
+# Let's Break It Down
+
+
+```cpp
+#include &lt;Rcpp.h&gt;
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+NumericVector square_root(NumericVector x) {
+  return sqrt(x);
+}
+```
+
+--
+
+.pull-left[
+
+- `#include &lt;Rcpp.h&gt;`
+
+- `using namespace Rcpp;`
+
+- `// [[Rcpp::export]]`
+ 
+- `NumericVector square_root(...`
+
+]
+
+.pull-right[
+
+- like `library(mypackage)`
+
+- so we don't have to write `package::function`
+
+- send function to R
+
+- function definition
+
+]
+
+???
+things to note:
+1. semicolons
+2. need to specify types
+
+---
+
+# A More Realistic Example
+
+Draw sample from multivariate normal
+
+
+```cpp
+#include &lt;RcppEigen.h&gt;
+// [[Rcpp::depends(RcppEigen)]]
+
+using namespace Rcpp;
+using namespace Eigen;
+
+// [[Rcpp::export]]
+VectorXd mv_normal(VectorXd mu, MatrixXd sigma){
+  int r = mu.size();
+  VectorXd standard_normal(r);
+  VectorXd result(r);
+
+  standard_normal = as&lt;VectorXd&gt;(rnorm(r, 0, 1));
+  result = mu + sigma.llt().matrixL() * standard_normal;
+  return result;
+}
+```
+
+
+???
+things to note:
+1. using RcppEigen - wrapper for Eigen C++ library for linear algebra
+2. `rnorm` is part of Rcpp sugar - C++ functions that will be familiar to R users
+3. using Cholesky decomposition
+
+---
+
+# A More Realistic Example
+
+In R:
+
+
+```r
+mu &lt;- c(4,4)
+sigma &lt;- diag(2) * 2
+mv_normal(mu, sigma)
+```
+
+```
+## [1] 3.086193 4.489947
+```
+
+
+---
+
+class: middle
+
+Let's see this in action!
+
+
+---
+
+# Resources
+
+[Rcpp.org](http://www.rcpp.org)
+
+[Rcpp Gallery](http://gallery.rcpp.org) - *lots* of examples
+
+Rcpp chapter of [Advanced R](http://adv-r.had.co.nz/Rcpp.html)
+
+Compiled Code chapter of [R Packages](http://r-pkgs.had.co.nz/src.html)
+
+
+
+---
+
+class: center, middle
+
+# Happy Rcpping!
+
+These slides were created with the R package [**xaringan**](https://github.com/yihui/xaringan).
+
+You can find them at
+
+You can find code for the examples at
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

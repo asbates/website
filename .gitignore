@@ -5,3 +5,13 @@
 blogdown
 .DS_Store
 public/
+
+# for c++ files
+*.o
+*.so
+*.dll
+
+
+# knitr cache folders
+*_cache/
+*_files/
