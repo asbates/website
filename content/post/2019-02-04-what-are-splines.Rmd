@@ -82,7 +82,7 @@ What kinds of functions can we use for the $h(X)$s? Hastie, et al. give a number
 
 So what are the basis functions for splines? Let's say we want to use cubic splines as these are the most common. As noted before, these are basically a cubic polynomial with additional conditions for continuity. The first part of a cubic spline basis is the regular polynomial basis: $1, x, x^2, x^3$. Then we tack on a basis function of the form
 \[
-h(x, \xi) = (x = \xi)_{+}^3 = 
+h(x, \xi) = (x - \xi)_{+}^3 = 
   \begin{cases}
   (x - \xi)^3 & \text{if  } x > \xi \\
   0 & \text{if  } x \le \xi.
