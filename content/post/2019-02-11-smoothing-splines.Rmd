@@ -1,0 +1,90 @@
+---
+title: Smoothing Splines
+author: ''
+date: '2019-02-11'
+slug: smoothing-splines
+categories:
+  - nonlinear models
+  - splines
+  - smoothing splines
+tags:
+  - nonlinear models
+  - splines
+  - smoothing splines
+---
+
+
+Now that we have a grasp of splines[^1] let's dig a little deeper.
+
+
+### Natural Splines
+
+Before we get into smoothing splines I want to briefly mention **natural splines**. A natural spline is a spline with the restriction that the function is linear in the boundary regions (left of the leftmost knot and right of the rightmost knot). This constraint is meant to reduce variability near the boundaries. We usually don't have as many data points in these regions which can be troublesome for many nonparametric methods (e.g. local regression), not just splines. A good illustration of this is given in Figure 5.3 of [The Elements of Statistical Learning](https://web.stanford.edu/~hastie/ElemStatLearn/).
+
+
+### Smoothing Splines
+
+Smoothing splines are splines that are fit using a penalized objective function to control complexity and, you guessed it, smoothness. Instead of minimizing the regular sum of squares criterion, we add a term based on the second derivative to control the curvature. To clarify, the splines we saw before were fit using the residual sum of squares (RSS) we are familiar with from linear regression:
+\[
+RSS(f) = \sum_{i=1}^n (y_i-f(x_i))^2
+\]
+where $f$ is the function we are trying to approximate with a spline. With a smoothing spline, we are minimizing
+\[
+RSS(f, \lambda) = \sum_{i=1}^n (y_i-f(x_i))^2 + \lambda \int [f''(t)]^2 dt.
+\]
+The second term with the integral controls the curvature of the function because it involves the second derivative. $\lambda > 0$ is a tuning parameter. Smaller values correspond to wigglier fits. Larger values to smoother fits.
+
+The RSS function lives in an infinite dimensional space but it turns out it has a *finite* dimensional, *unique* minimizer. I think that is pretty amazing. So what is the solution? A natural cubic spline with knots at the unique values of $x$. No more worrying about choosing the knots! Unfortunately we are not fully in the clear though because we still need to choose a value for $\lambda$. But this is easy to do with e.g. cross validation.
+
+
+### Relation to Ridge Regression
+
+If you've seen ridge regression before the penalty term in the smoothing spline objective function above follows a similar idea. Let's write $f$ as
+\[
+f(x) = \sum_{j=1}^n N_j(x)\beta_j = N\beta.
+\]
+Here the $N$s are the natural spline bases functions and the $\beta$s are the coefficients. If we throw all of those into a matrix and call it $N$, then we can rewrite the smoothing spline objective function as
+
+\[
+RSS(f,\lambda) = ||y - N\beta||^2 + \lambda \beta'\Omega\beta.
+\]
+where the elements of $N$ are $(N)_{ij} = N_j(x_i)$ and the elements of $\Omega$ are $(\Omega)_{jk} = \int N_j''(t)N_k''(t) dt.$. This looks like the ridge regression objective but with the extra $\Omega$ matrix. The solution gives us the estimated coefficients:
+\[
+\hat{\beta} = (N'N + \lambda \Omega)^{-1}N'y.
+\]
+Replace the $N$s with $X$s and the $\Omega$ with $I$ and you have ridge regression. The situation here is a bit more general though because of $\Omega$.
+
+
+### Degrees of Freedom
+
+As smoothing splines are more complex than regular splines, it shouldn't be surprising that computing a degree of freedom is a bit more complex. The degrees of freedom for a smoothing spline is computed from what is called the *smoother matrix* which we will denote by $S_{\lambda}$ since it depends on the smoothing parameter $\lambda$. Remember that we are trying to estimate $f(x) = N\beta$ and we do so by solving the smoothing spline objective function. This gives us $\hat{\beta}$ which we plug in for $\beta$ to get $\hat{f}$. Putting this all together we get
+\[
+\hat{f}(x) = N(N'N + \lambda \Omega)^{-1}N'y.
+\]
+Let's simplify a bit and write this as 
+\[
+\hat{f}(x) = S_{\lambda}y.
+\]
+Does this look familiar? If you've taken a regression course it should. It looks an awful lot like
+\[
+\hat{y} = Hy.
+\]
+The matrix $H$ is called the *hat* matrix because it puts the hat on $y$. And this is basically what we are doing with $S_{\lambda}$. But not exactly. $H$ is a projection matrix and as mentioned before $S_{\lambda}$ is a smoother matrix. As such they have slightly different properties.
+
+What does this have to do with the degrees of freedom? Well we define the **effective degrees of freedom** for smoothing splines as 
+\[
+df_{\lambda} = trace(S_{\lambda}),
+\]
+the trace of the smoother matrix[^2].
+
+Since the solution to the smoothing spline objective function has knots and each of the $x_i$s, we might naturally be tempted to think that this drives the degrees of freedom through the roof. But really the degrees of freedom depends on the smoother matrix which shrinks the coefficients. This shrinking means allows us to include so many knots without drastically increasing the degrees of freedom.
+
+### The End
+
+That's all I have to say about smoothing splines. If you want to know more check out [The Elements of Statistical Learning](https://web.stanford.edu/~hastie/ElemStatLearn/) to learn about the differences between projection and smoother matrices or how smoother matrices and degrees of freedom tie in with eigenvalues.
+
+
+
+[^1]: See the previous posts [Splines: What Are They](/2019/02/04/what-are-splines/) and [A Bit More On Splines](/2019/02/11/a-bit-more-on-splines) if you don't.
+
+[^2]: The degrees of freedom need not be an integer like it was before.

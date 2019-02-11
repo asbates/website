@@ -1,0 +1,67 @@
+---
+title: Smoothing Splines
+author: ''
+date: '2019-02-11'
+slug: smoothing-splines
+categories:
+  - nonlinear models
+  - splines
+  - smoothing splines
+tags:
+  - nonlinear models
+  - splines
+  - smoothing splines
+---
+
+
+
+<p>Now that we have a grasp of splines<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> let’s dig a little deeper.</p>
+<div id="natural-splines" class="section level3">
+<h3>Natural Splines</h3>
+<p>Before we get into smoothing splines I want to briefly mention <strong>natural splines</strong>. A natural spline is a spline with the restriction that the function is linear in the boundary regions (left of the leftmost knot and right of the rightmost knot). This constraint is meant to reduce variability near the boundaries. We usually don’t have as many data points in these regions which can be troublesome for many nonparametric methods (e.g. local regression), not just splines. A good illustration of this is given in Figure 5.3 of <a href="https://web.stanford.edu/~hastie/ElemStatLearn/">The Elements of Statistical Learning</a>.</p>
+</div>
+<div id="smoothing-splines" class="section level3">
+<h3>Smoothing Splines</h3>
+<p>Smoothing splines are splines that are fit using a penalized objective function to control complexity and, you guessed it, smoothness. Instead of minimizing the regular sum of squares criterion, we add a term based on the second derivative to control the curvature. To clarify, the splines we saw before were fit using the residual sum of squares (RSS) we are familiar with from linear regression: <span class="math display">\[
+RSS(f) = \sum_{i=1}^n (y_i-f(x_i))^2
+\]</span> where <span class="math inline">\(f\)</span> is the function we are trying to approximate with a spline. With a smoothing spline, we are minimizing <span class="math display">\[
+RSS(f, \lambda) = \sum_{i=1}^n (y_i-f(x_i))^2 + \lambda \int [f&#39;&#39;(t)]^2 dt.
+\]</span> The second term with the integral controls the curvature of the function because it involves the second derivative. <span class="math inline">\(\lambda &gt; 0\)</span> is a tuning parameter. Smaller values correspond to wigglier fits. Larger values to smoother fits.</p>
+<p>The RSS function lives in an infinite dimensional space but it turns out it has a <em>finite</em> dimensional, <em>unique</em> minimizer. I think that is pretty amazing. So what is the solution? A natural cubic spline with knots at the unique values of <span class="math inline">\(x\)</span>. No more worrying about choosing the knots! Unfortunately we are not fully in the clear though because we still need to choose a value for <span class="math inline">\(\lambda\)</span>. But this is easy to do with e.g. cross validation.</p>
+</div>
+<div id="relation-to-ridge-regression" class="section level3">
+<h3>Relation to Ridge Regression</h3>
+<p>If you’ve seen ridge regression before the penalty term in the smoothing spline objective function above follows a similar idea. Let’s write <span class="math inline">\(f\)</span> as <span class="math display">\[
+f(x) = \sum_{j=1}^n N_j(x)\beta_j = N\beta.
+\]</span> Here the <span class="math inline">\(N\)</span>s are the natural spline bases functions and the <span class="math inline">\(\beta\)</span>s are the coefficients. If we throw all of those into a matrix and call it <span class="math inline">\(N\)</span>, then we can rewrite the smoothing spline objective function as</p>
+<p><span class="math display">\[
+RSS(f,\lambda) = ||y - N\beta||^2 + \lambda \beta&#39;\Omega\beta.
+\]</span> where the elements of <span class="math inline">\(N\)</span> are <span class="math inline">\((N)_{ij} = N_j(x_i)\)</span> and the elements of <span class="math inline">\(\Omega\)</span> are <span class="math inline">\((\Omega)_{jk} = \int N_j&#39;&#39;(t)N_k&#39;&#39;(t) dt.\)</span>. This looks like the ridge regression objective but with the extra <span class="math inline">\(\Omega\)</span> matrix. The solution gives us the estimated coefficients: <span class="math display">\[
+\hat{\beta} = (N&#39;N + \lambda \Omega)^{-1}N&#39;y.
+\]</span> Replace the <span class="math inline">\(N\)</span>s with <span class="math inline">\(X\)</span>s and the <span class="math inline">\(\Omega\)</span> with <span class="math inline">\(I\)</span> and you have ridge regression. The situation here is a bit more general though because of <span class="math inline">\(\Omega\)</span>.</p>
+</div>
+<div id="degrees-of-freedom" class="section level3">
+<h3>Degrees of Freedom</h3>
+<p>As smoothing splines are more complex than regular splines, it shouldn’t be surprising that computing a degree of freedom is a bit more complex. The degrees of freedom for a smoothing spline is computed from what is called the <em>smoother matrix</em> which we will denote by <span class="math inline">\(S_{\lambda}\)</span> since it depends on the smoothing parameter <span class="math inline">\(\lambda\)</span>. Remember that we are trying to estimate <span class="math inline">\(f(x) = N\beta\)</span> and we do so by solving the smoothing spline objective function. This gives us <span class="math inline">\(\hat{\beta}\)</span> which we plug in for <span class="math inline">\(\beta\)</span> to get <span class="math inline">\(\hat{f}\)</span>. Putting this all together we get <span class="math display">\[
+\hat{f}(x) = N(N&#39;N + \lambda \Omega)^{-1}N&#39;y.
+\]</span> Let’s simplify a bit and write this as <span class="math display">\[
+\hat{f}(x) = S_{\lambda}y.
+\]</span> Does this look familiar? If you’ve taken a regression course it should. It looks an awful lot like <span class="math display">\[
+\hat{y} = Hy.
+\]</span> The matrix <span class="math inline">\(H\)</span> is called the <em>hat</em> matrix because it puts the hat on <span class="math inline">\(y\)</span>. And this is basically what we are doing with <span class="math inline">\(S_{\lambda}\)</span>. But not exactly. <span class="math inline">\(H\)</span> is a projection matrix and as mentioned before <span class="math inline">\(S_{\lambda}\)</span> is a smoother matrix. As such they have slightly different properties.</p>
+<p>What does this have to do with the degrees of freedom? Well we define the <strong>effective degrees of freedom</strong> for smoothing splines as <span class="math display">\[
+df_{\lambda} = trace(S_{\lambda}),
+\]</span> the trace of the smoother matrix<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>.</p>
+<p>Since the solution to the smoothing spline objective function has knots and each of the <span class="math inline">\(x_i\)</span>s, we might naturally be tempted to think that this drives the degrees of freedom through the roof. But really the degrees of freedom depends on the smoother matrix which shrinks the coefficients. This shrinking means allows us to include so many knots without drastically increasing the degrees of freedom.</p>
+</div>
+<div id="the-end" class="section level3">
+<h3>The End</h3>
+<p>That’s all I have to say about smoothing splines. If you want to know more check out <a href="https://web.stanford.edu/~hastie/ElemStatLearn/">The Elements of Statistical Learning</a> to learn about the differences between projection and smoother matrices or how smoother matrices and degrees of freedom tie in with eigenvalues.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>See the previous posts <a href="/2019/02/04/what-are-splines/">Splines: What Are They</a> and <a href="/2019/02/11/a-bit-more-on-splines">A Bit More On Splines</a> if you don’t.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>The degrees of freedom need not be an integer like it was before.<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
