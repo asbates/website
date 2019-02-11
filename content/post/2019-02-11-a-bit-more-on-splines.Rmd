@@ -1,0 +1,62 @@
+---
+title: A Bit More On Splines
+author: ''
+date: '2019-02-11'
+slug: a-bit-more-on-splines
+categories:
+  - nonlinear models
+  - splines
+tags:
+  - nonlinear models
+  - splines
+---
+
+You may or may not find this post relevant. It's mostly a few notes-to-self. If I don't write them down I will likely forget.
+
+
+In the previous post [Splines: What Are They?](/2019/02/04/what-are-splines/) I gave an introduction to splines. This post is a follow up to that. There are a few things I want to make more explicit and a few other things I want to talk about before moving on to other splines.
+
+
+### Univariate for Now
+
+For now, we are just considering univariate $x$. This was sort of implicit in the graphs but I wanted to make that explicit. Also, we are considering $x$ to be numeric but that should be fairly obvious. In a couple posts down the line we will get into extending splines to several dimensions.
+
+
+### General Spline Basis
+
+Previously we looked at the basis for cubic and quartic splines. In general we can have order $M$ splines with $k$ knots $\xi_1, \xi_2, ..., \xi_k$. These are piecewise polynomials of degree $M-1$ with continuous derivatives up to order $M-2$. The basis for an order $M$ spline has the form
+\[
+\begin{align*}
+h_j(x) &= x^{j-i} &\text{for  } j = 1, 2, ..., M \\
+h_{M+\ell}(x) &= (x-\xi_{\ell})_+^{M-1} &\text{for  } \ell = 1, 2, ..., k.
+\end{align*}
+\]
+This is called a **truncated-power basis** (the powers about the knots are truncated by the +). A cubic spline has order $M = 4$. My guess is because (for one knot) there are four terms: $1, x, x^2, (x-\xi)_+^3$. Basically, the order $M$ is one more than the degree of the piecewise polynomials used. Apparently people claim that cubic splines are the lowest order splines that look smooth to the human eye. As in we can't see any discontinuity at the knots. This is probably why cubic splines are the most common. Why use a more complicated basis when a cubic cubic splines look smooth enough? 
+
+
+### B-Spline Basis
+
+The truncated-power basis is the most common way to represent splines in writing. But of course we can do a basis transformation so there are a lot of other ways to write them. In practice though, the truncated-power basis presents some problems. In computational terms they can lead to drastic rounding errors (taking powers of large numbers). This is typically resolved by using a **B-spline basis**. A B-spline basis is more computationally stable so this is what is actually used. They are bit more complicated so we won't go into them here. They are still the same splines, they just have a different basis representation.
+
+
+### Degrees of Freedom
+
+The degrees of freedom for a spline is the the number of basis functions. This depends on the number of knots as well as the degree of the polynomial. For a cubic spline with $k$ knots, there are $k+4$ degrees of freedom. One for each of the $(x-\xi_i)_+^3$ terms and 4 for the $1, x, x^2, x^3$ terms. So a cubic spline with two knots has 6 degrees of freedom. Like anything else, more degrees of freedom means more flexibility and vice versa. More generally an order $M$ spline with $k$ knots will have $M+k = (M-1)+1+k$ degrees of freedom (since an order $M$ spline will use polynomials of degree $M-1$).
+
+
+### Choosing the Knots
+
+There are actually three choices to be made before fitting a spline: the order and the number and location of the knots. Let's simplify things by assuming we will be using cubic splines since these are the most common and produce a smooth fit.
+
+How do we choose the number and location of the knots? One way to do this is to specify the degrees of freedom. This will in turn specify the number of knots since the degree of the polynomial is fixed. A natural choice would be to place them at quantiles of the data. We could try several degrees of freedom and do some sort of model selection like examining AIC, MSE, etc. This is probably the most practical and objective method. But we could of course choose our own knots. We could place fewer knots where the data appears more stable and more knots where the data seems to change faster.
+
+
+### Summary
+
+Here we looked at the more general order $M$ splines and what the truncated-power basis representation is. We also learned that this basis gives rise to computational issues and so we actually use B-splines in practice. We also discussed some other implementation issues like how to choose the number and location of the knots.
+
+Next up: smoothing splines!
+
+
+
+
