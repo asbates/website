@@ -120,4 +120,4 @@ That's pretty much all I have for univariate splines. In the next few posts we w
 
 
 
-[^1]: If you really want to see it you can find it on my GitHub [here](https://github.com/asbates/nonlinear-models/blob/master/splines/univariate-comparison.R).
+[^1]: If you really want to see it you can find it on [my GitHub](https://github.com/asbates/nonlinear-models/blob/master/splines/univariate-comparison.R).
