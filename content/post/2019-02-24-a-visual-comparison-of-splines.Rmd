@@ -19,7 +19,7 @@ So far we have mostly stuck to the theory of splines. Let's switch gears and see
 
 ### A First Example
 
-To start, we will generate some fake data so we can compare our fitted models to the true model. In this example we will use a polynomial.
+To start, we will generate some fake data so we can compare our fitted models to the true model. In this example we will use the polynomial $y = 1 + 2x + 2x^2 + 4x^3$.
 
 ```{r first-example-data, message = FALSE}
 library(tidyverse)

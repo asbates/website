@@ -19,7 +19,7 @@ tags:
 <p>So far we have mostly stuck to the theory of splines. Let’s switch gears and see how we might actually implement them. We will do a visual comparison to help build our intuition for what all that theory looks like in practice.</p>
 <div id="a-first-example" class="section level3">
 <h3>A First Example</h3>
-<p>To start, we will generate some fake data so we can compare our fitted models to the true model. In this example we will use a polynomial.</p>
+<p>To start, we will generate some fake data so we can compare our fitted models to the true model. In this example we will use the polynomial <span class="math inline">\(y = 1 + 2x + 2x^2 + 4x^3\)</span>.</p>
 <pre class="r"><code>library(tidyverse)
 library(splines)
 
