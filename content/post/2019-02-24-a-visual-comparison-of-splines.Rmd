@@ -13,7 +13,7 @@ tags:
   - R
 ---
 
-In this quick post we will do a visual comparison of three spline methods: splines, natural splines, and smoothing splines. If you aren't familiar with these see my [previous post](/2019/02/04/what-are-splines/). 
+In this post we will do a visual comparison of three spline methods: splines, natural splines, and smoothing splines. If you aren't familiar with these see my [previous post](/2019/02/04/what-are-splines/). 
 
 So far we have mostly stuck to the theory of splines. Let's switch gears and see how we might actually implement them. We will do a visual comparison to help build our intuition for what all that theory looks like in practice.
 
