@@ -1,5 +1,5 @@
 ---
-title: A Visual Comparison of Splines
+title: 'A Visual Comparison of Splines'
 author: ''
 date: '2019-02-24'
 slug: a-visual-comparison-of-splines
