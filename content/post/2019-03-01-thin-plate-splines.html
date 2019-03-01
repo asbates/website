@@ -1,0 +1,115 @@
+---
+title: 'Thin Plate Splines'
+author: ''
+date: '2019-03-01'
+slug: thin-plate-splines
+categories:
+  - nonlinear models
+  - R
+  - splines
+tags:
+  - nonlinear models
+  - R
+  - splines
+  - thin plate splines
+---
+
+
+
+<p>So far we have looked at splines with a one dimensional <span class="math inline">\(x\)</span> (see the first post in this series <a href="/2019/02/04/what-are-splines/">here</a> ). Let’s continue our investigation of splines by seeing how they can be extended to a multivariate <span class="math inline">\(x\)</span>.</p>
+<div id="multivariate-splines" class="section level3">
+<h3>Multivariate Splines</h3>
+<p>The simplest approach would be to fit a spline to each of the <span class="math inline">\(x\)</span>s. For example, if we have <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span> then we could fit a spline to <span class="math inline">\(x_1\)</span> and a spline to <span class="math inline">\(x_2\)</span>. This would make new <span class="math inline">\(x\)</span> values to which we could fit a linear model to. In R code it would look something like <code>lm(y ~ bs(x1) + bs(x2), data = df)</code> with <code>bs</code> coming from the <code>splines</code> package and a data frame <code>df</code> (we could also add linear terms if we wanted to). We will take a different approach in this post.</p>
+</div>
+<div id="thin-plate-splines" class="section level3">
+<h3>Thin Plate Splines</h3>
+<p>At the core, thin plate splines are a multivariate version of smoothing splines. Remember that smoothing splines are fit by minimizing the residual sum of squares with a smoothness penalty based on the second derivative of the function <span class="math inline">\(f\)</span> we are trying to approximate: <span class="math display">\[
+RSS(f, \lambda) = \sum_{i=1}^n (y_i-f(x_i))^2 + \lambda \int [f&#39;&#39;(t)]^2 dt.
+\]</span> So how does this generalize this to higher dimensions? Well, the first part of this term doesn’t change. Even if the inputs to <span class="math inline">\(f\)</span> are multivariate, the output is still univariate. What needs to be adjusted then is the penalty term. Hopefully it’s not too surprising that instead of a <span class="math inline">\(&#39;\)</span>, a univariate derivative, we use a <span class="math inline">\(\partial\)</span>, a partial derivative. And since the penalty term involves a second derivative, we need to look at second partial derivatives. Now that we are in a multivariate setting, there isn’t just “the” second derivative so we need to look at mixed partials as well. So our residual sum of squares will look like <span class="math display">\[
+RSS(f, \lambda) = \sum_{i=1}^n (y_i-f(x_i))^2 + \lambda J(f)
+\]</span> as before but with the penalty <span class="math display">\[
+J(f) = \int \left[ \left(\frac{\partial^2f(x)}{\partial x_1^2} \right)^2 + 2\left(\frac{\partial^2f(x)}{\partial x_1x_2} \right)^2 + \left(\frac{\partial^2f(x)}{\partial x_2^2} \right)^2 \right] dx_1 dx_2.
+\]</span></p>
+<p>In general, the penalty function <span class="math inline">\(J\)</span> is <span class="math display">\[
+J(f) = \int \sum \frac{m!}{\alpha_1! \cdots \alpha_d!} \left(\frac{\partial^m f(x)}{\partial x_1^{\alpha_1} \cdots \partial x_d^{\alpha_d}} \right)^2 dx.
+\]</span> This is quite a bit more complex that smoothing splines so let’s break this down. <span class="math inline">\(m\)</span> is the order of the derivatives we take and <span class="math inline">\(d\)</span> is the dimension of <span class="math inline">\(x\)</span> (both are 2 in the previous equation). The <span class="math inline">\(\alpha\)</span>s are non-negative integer vectors such that <span class="math inline">\(\sum \alpha_i = m\)</span>. As an example, suppose <span class="math inline">\(m = 2\)</span> and <span class="math inline">\(d = 1\)</span>. This means we have a univariate <span class="math inline">\(x\)</span> and we take second derivatives. The restriction that the <span class="math inline">\(\alpha\)</span>s sum to <span class="math inline">\(m\)</span> means that <span class="math inline">\(\alpha_1 = 2\)</span>. Then the penalty function is <span class="math display">\[
+J(f) = \int \frac{2!}{2!} \left(\frac{\partial^2 f(x)}{\partial x^2} \right)^2 dx.
+\]</span> But in this case <span class="math inline">\(x\)</span> is univariate so what we really have is <span class="math display">\[
+J(f) = \int (f&#39;&#39;(x))^2 dx,
+\]</span> which is the penalty for a cubic smoothing spline.</p>
+<p>It’s a bit hard to see (I didn’t work this out myself) but it turns a thin plate spline is a linear function of the response. Similar to what we saw with smoothing splines, there is a smoother matrix <span class="math inline">\(S_{\lambda}\)</span> that we can use to write the fitted values as <span class="math display">\[
+\hat{f}(x) = \hat{y} = S_{\lambda}y.
+\]</span> <span class="math inline">\(S_{\lambda}\)</span> is analogous to the hat matrix <span class="math inline">\(H\)</span> in standard linear regression and we can use it to do things like determine the degrees of freedom and obtain the residuals as <span class="math inline">\((I-S_{\lambda}y)\)</span>.</p>
+</div>
+<div id="an-example" class="section level3">
+<h3>An Example</h3>
+<p>Alright, enough of this math stuff, let’s look at an example. For this example, I just want to help get a visual of what is going on with these thin plate spline things and demonstrate how to fit one in R. As before, we will use some fake data so we have a truth for comparison.</p>
+<p>First we generate some data, a polynomial with some added noise, and then plot it.</p>
+<pre class="r"><code>library(dplyr)
+library(lattice)
+
+set.seed(42)
+df &lt;- expand.grid(x = -10:10, y = -10:10) %&gt;% 
+  mutate(z = y + x^2 + y^2 - x*y - x^2*y + rnorm(n(), 100, 20))
+
+wireframe(z ~ x*y, df)</code></pre>
+<p><img src="/post/2019-03-01-thin-plate-splines_files/figure-html/data-gen-1.png" width="672" /></p>
+<p>To fit a thin plate spline we are going to use the <code>fields</code> package. Fun fact! <code>fields</code> started out as <code>FUNFITS</code>, a package for S-Plus. Barbara Bailey, my advisory for the nonlinear models self study I’m taking, was one of the authors of <code>FUNFITS</code>. That’s how I heard of the <code>fields</code> package. I think <code>mgcv</code> is a more modern package that can fit thin plate splines. But we will hold off on using it until we start looking at generalized additive models. Anyways, let’s fit a thin plate spline:</p>
+<pre class="r"><code>library(fields)
+
+# takes x,y instead of formula
+model_x &lt;- df %&gt;% select(x,y)
+model_y &lt;- df %&gt;% select(z)
+
+fit &lt;- Tps(model_x, model_y)</code></pre>
+<p>The model summary is quite hefty so I don’t print it out here. As you might expect it gives things like the degrees of freedom and smoothing parameter. Like most modeling functions there are various arguments for specifying the fitting method, etc. but we won’t get into those here.</p>
+<p>To see how well the model fits we can add the fitted values the plot of the data above<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.</p>
+<pre class="r"><code>pred_tps &lt;- predict(fit)
+
+# add predicted and true values
+df &lt;- df %&gt;% 
+  mutate(true_z = y + x^2 + y^2 - x*y - x^2*y) %&gt;% 
+  mutate(fitted_z = as.vector(pred_tps))
+
+# to get a surface and points on the same plot
+wire_cloud &lt;- function(x, y, z, point_z, ...){
+  panel.wireframe(x, y, z, ...)
+  panel.cloud(x, y, point_z, ...)
+}
+
+# with the data as above
+wireframe(z ~ x*y, data = df,
+          panel = wire_cloud, point_z = df$fitted_z,
+          pch = 16)</code></pre>
+<p><img src="/post/2019-03-01-thin-plate-splines_files/figure-html/tps-fit-plot-1.png" width="672" /></p>
+<p>This looks like a dangerously good fit. It’s hard to see any difference between the data (the surface) and the fitted values (the points). Let’s see how the fitted values compare to the true function.</p>
+<pre class="r"><code>wireframe(true_z ~ x*y, data = df,
+          panel = wire_cloud, point_z = df$fitted_z,
+          pch = 16)</code></pre>
+<p><img src="/post/2019-03-01-thin-plate-splines_files/figure-html/tps-fit-plot-truth-1.png" width="672" /></p>
+<p>OK, now we can see the gaps.</p>
+<p>For curiosity, we’ll take this one step further and see how the thin plate spline compares to a random forest. We won’t do anything fancy and just use the default values</p>
+<pre class="r"><code>library(randomForest)
+fit_rf &lt;- randomForest(z ~ x + y, df)
+pred_rf &lt;- predict(fit_rf)
+
+df &lt;- df %&gt;% 
+  mutate(fitted_rf = pred_rf)
+
+wireframe(z ~ x*y, data = df,
+          panel = wire_cloud, point_z = df$fitted_rf,
+          pch = 16)</code></pre>
+<p><img src="/post/2019-03-01-thin-plate-splines_files/figure-html/rf-fit-1.png" width="672" /></p>
+<pre class="r"><code>wireframe(true_z ~ x*y, data = df,
+          panel = wire_cloud, point_z = df$fitted_rf,
+          pch = 16)</code></pre>
+<p><img src="/post/2019-03-01-thin-plate-splines_files/figure-html/rf-fit-2.png" width="672" /></p>
+<p>It’s pretty obvious from the plots that the thin plate spline is a better fit than the random forest. This probably has something to do with the fact that the true function is a polynomial and splines are polynomials at heart.</p>
+<p>That’s it for thin plate splines. Next we will look at multivariate adaptive regression splines (MARS) and then finish of this section of nonlinear models with generalized additive models before moving on to nonlinear time series.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>I figured out how to add a surface and points from <a href="https://stackoverflow.com/questions/1406202/plotting-a-wireframe-and-a-cloud-with-lattice-in-r">this</a> Stack Overflow page.<a href="#fnref1">↩</a></p></li>
+</ol>
+</div>
