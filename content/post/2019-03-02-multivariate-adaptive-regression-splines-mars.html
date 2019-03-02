@@ -17,12 +17,100 @@ tags:
 
 
 
-<p>As you may have guessed from the title of the post, we are going to talk about multivariate adaptive regression splines or <a href="https://projecteuclid.org/euclid.aos/1176347963">MARS</a> for short. MARS is multivariate spline method (obviously) that can handle a large number of inputs.</p>
+<p>As you may have guessed from the title of the post, we are going to talk about multivariate adaptive regression splines, or <a href="https://projecteuclid.org/euclid.aos/1176347963">MARS</a>. MARS is multivariate spline method (obviously) that can handle a large number of inputs.</p>
 <p>Multivariate spline methods can have some problems with a high dimensional input <span class="math inline">\(x\)</span>. Why? Because the size of the basis grows exponentially with the number of inputs. Suppose we have two inputs, <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>, along with a set of basis functions <span class="math inline">\(h_{1k}(x_1), k = 1, 2, ..., M_1\)</span> for <span class="math inline">\(x_1\)</span> and basis functions <span class="math inline">\(h_{2k}(x_2), k = 1, 2, ..., M_2\)</span> for <span class="math inline">\(x_2\)</span>. These can be any sort of spline basis functions. For example, each of the <span class="math inline">\(h\)</span>s can define a natural spline basis. To estimate our function <span class="math inline">\(f\)</span>, we combine these two bases together multiplicatively to get <span class="math display">\[
 g_{jk}(x) = h_{1j}(x_1)h_{2k}(x_2)
-\]</span> where <span class="math inline">\(j\)</span> runs from 1 to <span class="math inline">\(M_1\)</span> and <span class="math inline">\(k\)</span> runs from 1 to <span class="math inline">\(M_2\)</span>. This defines what is called a <em>tensor product basis</em> for <span class="math inline">\(f\)</span> which looks like <span class="math display">\[
+\]</span> where <span class="math inline">\(j\)</span> runs from 1 to <span class="math inline">\(M_1\)</span> and <span class="math inline">\(k\)</span> runs from 1 to <span class="math inline">\(M_2\)</span>. This defines what is called a <strong>tensor product basis</strong> for <span class="math inline">\(f\)</span> which looks like <span class="math display">\[
 f(x) = \sum_{j=1}^{M_1} \sum_{k = 1}^{M_2} \beta_{jk}g_{jk}(x).
-\]</span> The number of basis functions grows extremely fast. To see this, imagine we want to use cubic splines with two knots. In this case there are 6 basis functions for <span class="math inline">\(x_1\)</span> and 6 basis functions for <span class="math inline">\(x_2\)</span>. When we combine these to get a basis for <span class="math inline">\(f\)</span>, we get 36 (<span class="math inline">\(6^2\)</span>) basis functions <span class="math inline">\(g_{jk}\)</span> because we multiply each of the basis functions <span class="math inline">\(h_{1k}\)</span> for <span class="math inline">\(x_1\)</span> with each of the functions <span class="math inline">\(h_{2k}\)</span> for <span class="math inline">\(x_2\)</span>. Three inputs would give <span class="math inline">\(6^3\)</span> or 216 basis functions for <span class="math inline">\(f\)</span>. Wow! We went from 6 to 216 just by adding two more variables. And this is assuming only two knots for each <span class="math inline">\(x_i\)</span>. In reality we would likely have more knots thus more basis functions and the numbers would be even bigger. MARS attempts to remedy this by considering but not including all possible basis functions for each <span class="math inline">\(x_i\)</span>. But before we get into that, let’s see what kind of basis functions MARS uses.</p>
+\]</span> The number of basis functions grows extremely fast. To see this, imagine we want to use cubic splines with two knots for each <span class="math inline">\(x\)</span>. In this case there are 6 basis functions for <span class="math inline">\(x_1\)</span> and 6 basis functions for <span class="math inline">\(x_2\)</span>. When we combine these to get a basis for <span class="math inline">\(f\)</span>, we get 36 (<span class="math inline">\(6^2\)</span>) basis functions <span class="math inline">\(g_{jk}\)</span> because we multiply each of the basis functions <span class="math inline">\(h_{1k}\)</span> for <span class="math inline">\(x_1\)</span> with each of the functions <span class="math inline">\(h_{2k}\)</span> for <span class="math inline">\(x_2\)</span>. Three inputs would give <span class="math inline">\(6^3\)</span> or 216 basis functions for <span class="math inline">\(f\)</span>. Wow! We went from 6 to 216 just by adding two more variables. And this is assuming only two knots for each <span class="math inline">\(x_i\)</span>. In reality we would likely have more knots thus more basis functions and the numbers would be even bigger. MARS attempts to remedy this by considering, but not including, all possible basis functions for each <span class="math inline">\(x_i\)</span>. But before we get into that, let’s see what kind of basis functions MARS uses.</p>
 <div id="mars-basis-functions" class="section level3">
 <h3>MARS Basis Functions</h3>
+<p>MARS uses linear splines as basis functions. These take the form <span class="math inline">\(h(x) = (x-t)_{+}\)</span> where <span class="math inline">\(t\)</span> is a knot and the <span class="math inline">\(+\)</span> means the positive part. That is, <span class="math display">\[
+(x - t)_{+} = \begin{cases} 
+    x - t &amp;\text{   if } x &gt; t \\
+    0     &amp;\text{   if } x \le t.
+\end{cases}
+\]</span> This is similar to the truncated-power basis we <a href="/2019/02/11/a-bit-more-on-splines">saw previously</a> with order <span class="math inline">\(M = 2\)</span>. The difference is that for MARS we don’t include the <span class="math inline">\(x\)</span> term, just the intercept and <span class="math inline">\((x - t)_{+}\)</span> terms. Actually, the basis functions for MARS come in pairs: <span class="math inline">\((x-t)_{+}\)</span> and <span class="math inline">\((t-x)_{+}\)</span>.</p>
+<p>For the knots, we use the unique values of each <span class="math inline">\(x_j\)</span>. This gives quite a bit of basis functions but as we will see soon not all of them will be included in the final model. With these knots and the truncated linear basis functions, the entire<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> basis for <span class="math inline">\(f\)</span> is the set <span class="math inline">\(B = \{ (x_j - t)_{+}, (t-x_j)_{+} \}\)</span> where <span class="math inline">\(t\)</span> takes values in <span class="math inline">\(\{ x_{1j}, x_{2j}, ..., x_{nj}\}\)</span> and <span class="math inline">\(j\)</span> runs from 1 to <span class="math inline">\(p\)</span>.</p>
+</div>
+<div id="mars-model-fitting-procedure" class="section level3">
+<h3>MARS Model Fitting Procedure</h3>
+<p>The MARS fitting procedure is is a two stage process. The forward stage is the same idea as forward stepwise regression. This could result in a large number of terms and overfitting so the backwards stage tries to mitigate this be dropping some terms.</p>
+<div id="the-foward-step" class="section level4">
+<h4>The Foward Step</h4>
+<p>The forward stage of the fitting procedure starts by including only the constant (or intercept) term. We then consider adding each function in <span class="math inline">\(B\)</span> <em>pairwise</em> and pick the pair that reduces the error the most. Next, we try adding product terms, selecting again from the candidate pairs in <span class="math inline">\(B\)</span> and choosing the pair that minimizes the error. This process is continued until a predefined number of terms are included. Suppose we have a function <span class="math inline">\(h_{\ell}(x)\)</span> already included in the model (<span class="math inline">\(h_{\ell}\)</span> could be 1 or something like <span class="math inline">\((x-t)_{+}\)</span> or <span class="math inline">\((x_1-t_1)_{+} (x_2-t_2)_{+}\)</span>) and there are <span class="math inline">\(k\)</span> such terms. Then we consider expanding the model by adding two terms, <span class="math display">\[
+\hat{\beta}_{k+1}h_{\ell}(x)(x_j-t)_{+} + \hat{\beta}_{k+2}h_{\ell}(x)(t-x_j)_{+},
+\]</span> and keeping the pair with the smallest error.</p>
+<p>Let’s run through an example to illustrate this idea. First, we include the intercept 1, and this is our entire model. Now suppose we look at all the choices and find that we want to include the variable <span class="math inline">\(X_3\)</span> with a knot at <span class="math inline">\(x_{23}\)</span>, the second value for <span class="math inline">\(X_3\)</span>, because this results in the lowest error. Now our model looks like <span class="math display">\[
+\beta_0 + \beta_1 (X_3-x_{33})_{+} + \beta_2 (x_{33} - X_3)_{+}.
+\]</span> At this stage we have three <span class="math inline">\(h\)</span>s in the model: <span class="math inline">\(h_0(x)= 1, h_1(x) = (X_3-x_{33})_{+}\)</span>, and <span class="math inline">\(h_2(x) = (x_{33} - X_3)_{+}\)</span>. Next, we consider multiplying one of the functions in <span class="math inline">\(B\)</span> by one of the three <span class="math inline">\(h\)</span>s already included in our model. We might find that we want to include <span class="math inline">\((X_2 - x_{27})_{+}\)</span> and <span class="math inline">\((x_{27} - X_2)_{+}\)</span>, the second variable with a knot at the 7th value of this variable. Specifically, we want to include this pair with <span class="math inline">\(h_0(x) = 1\)</span>. Now are model has the form <span class="math display">\[
+\beta_0 + \beta_1 (X_3-x_{33})_{+} + \beta_2 (x_{33} - X_3)_{+} + \beta_3(X_2 - x_{27})_{+} + \beta_4(x_{27} - X_2)_{+}.
+\]</span> If we had decided ahead of time that we wanted to include only 5 terms in our model we would be done. If we wanted more terms we would repeat this process until we get to the desired number of terms.</p>
+</div>
+<div id="the-backward-step" class="section level4">
+<h4>The Backward Step</h4>
+<p>For the backward stage of the fitting procedure we simplify the model by deleting terms. The choice of which term to remove is based on which one results in the smallest increase in error upon removal. This gives us a bunch of different models each with a different number of terms. The final model is chosen using generalized cross validation (GCV). We could use regular cross validation too but this is more expensive computationally. We won’t get into the details of GCV here. Basically, we apply a formula to each model (that have different numbers of terms) and pick the best one.</p>
+</div>
+</div>
+<div id="why-linear-basis-functions" class="section level3">
+<h3>Why Linear Basis Functions?</h3>
+<p>When I first saw that all the basis functions were linear I wondered why we didn’t include higher powers. Why not follow the same fitting procedure but consider for example <span class="math inline">\((x-t)_{+}^2\)</span> in addition to the linear terms? Apparently there is a good reason for this that Hastie and friends discuss in <a href="https://web.stanford.edu/~hastie/ElemStatLearn/">The Elements of Statistical Learning</a>. When the MARS basis functions are multiplied together, they are only nonzero over a small part of the input space and zero everywhere else. So the regression surface is nonzero only when it needs to be. Higher order polynomial products however, would give a surface that is nonzero everywhere which apparently wouldn’t work as well. The zeroness of the linear basis function products also has the effect of saving parameters as we only need parameters in the nonzero parts. With a high dimensional input space this is especially important. As usual, there are also computational reasons but we won’t worry about them here.</p>
+</div>
+<div id="an-example" class="section level3">
+<h3>An Example</h3>
+<p>Let’s look at an example. Previously we made up some data so we could see how fitted models compared to their truths and didn’t look into the model fitting packages much. This time we will focus on getting familiar with the R package <code>earth</code>, which implements MARS. The data we will use is included in the package. <code>ozone1</code> contains ozone readings from Los Angeles along with several covariates. Let’s start by loading the data and fitting a MARS model:</p>
+<pre class="r"><code>library(earth)
+mars &lt;- earth(O3 ~., data = ozone1)
+mars</code></pre>
+<pre><code>## Selected 12 of 20 terms, and 9 of 9 predictors
+## Termination condition: Reached nk 21
+## Importance: temp, humidity, dpg, doy, vh, ibh, vis, ibt, wind
+## Number of terms at each degree of interaction: 1 11 (additive model)
+## GCV 14.61004    RSS 4172.671    GRSq 0.7730502    RSq 0.8023874</code></pre>
+<p>It looks like there were 20 model terms under consideration and 12 of them were included in the final model. <code>Termination condition: Reached nk 21</code> tells us that the forward pass stopped when it reached 21 terms. <code>earth</code> chooses this number based on the number of inputs but we have the option to change it.</p>
+<p>What can we do with an <code>earth</code> object?</p>
+<pre class="r"><code>methods(class = &quot;earth&quot;)</code></pre>
+<pre><code>##  [1] anova          case.names     coef           deviance      
+##  [5] effects        extractAIC     family         fitted        
+##  [9] fitted.values  format         hatvalues      model.matrix  
+## [13] plot           plotmo.pairs   plotmo.singles plotmo.y      
+## [17] predict        print          resid          residuals     
+## [21] summary        update         variable.names weights       
+## see &#39;?methods&#39; for accessing help and source code</code></pre>
+<p>As expected we have the usual methods like <code>summary</code>, <code>residuals</code>, etc. Let’s see what <code>plot</code> does.</p>
+<pre class="r"><code>plot(mars)</code></pre>
+<p><img src="/post/2019-03-02-multivariate-adaptive-regression-splines-mars_files/figure-html/earth-plot-1.png" width="672" /> This shouldn’t be surprising. Usually plotting a model objects gives residual plots. We can also get two types of variable importance measures and there is a plotting method for them as well.</p>
+<pre class="r"><code>evimp(mars)</code></pre>
+<pre><code>##          nsubsets   gcv    rss
+## temp           11 100.0  100.0
+## humidity        8  32.0   34.8
+## dpg             8  32.0   34.8
+## doy             8  32.0   34.8
+## vh              7  31.6   33.9
+## ibh             5  27.3   29.9
+## vis             5  15.3   19.3
+## ibt             4   7.9   13.6
+## wind            2   5.3    9.4</code></pre>
+<p>When looking at the methods I was curious about the <code>plotmo</code> methods. After a quick search I found that <code>plotmo</code> is a package for plotting regression surfaces. It’s written by the same person who wrote <code>earth</code>, Stephen Milborrow. Le’s see what it does.</p>
+<pre class="r"><code>plotmo(mars)</code></pre>
+<pre><code>##  plotmo grid:    vh wind humidity temp    ibh dpg   ibt vis   doy
+##                5760    5       64   62 2112.5  24 167.5 120 205.5</code></pre>
+<p><img src="/post/2019-03-02-multivariate-adaptive-regression-splines-mars_files/figure-html/plotmo-1.png" width="672" /> This is pretty cool. It shows us the basis functions for each of the input variables. But the <code>plotmo</code> description says it can plot surfaces. After some more digging I figured out how to do this. By default, <code>earth</code> doesn’t include interaction terms like <span class="math inline">\((x-t)_{+}(x-r)_{+}\)</span>. In order to get a surface plot, we need to have interactions because we need two input variables. We can do this by modifying the original model.</p>
+<pre class="r"><code># include just 3 variables for simplicity
+oz &lt;- ozone1[, c(&quot;O3&quot;, &quot;wind&quot;, &quot;humidity&quot;, &quot;temp&quot;)]
+mars2 &lt;- earth(O3 ~., data = oz, degree = 2) # allow first order interactions
+plotmo(mars2)</code></pre>
+<pre><code>##  plotmo grid:    wind humidity temp
+##                     5       64   62</code></pre>
+<p><img src="/post/2019-03-02-multivariate-adaptive-regression-splines-mars_files/figure-html/mars2-1.png" width="672" /> This is fantastic! It let’s actually <em>see</em> how the regression surface is built up instead of just looking at a bunch of error numbers. Unfortunately, unless you live in a higher dimensional world you can’t see the full surface. But for the rest of us this is as close as we can get.</p>
+</div>
+<div id="a-few-notes-on-earth" class="section level3">
+<h3>A Few Notes On earth</h3>
+<p>We just looked at a few features of the <code>earth</code> package here but there is a lot more we could do. For example, the <code>earth</code> function has a bunch of options one could play around with. There is a <a href="http://www.milbo.org/doc/earth-notes.pdf">vignette</a> that goes into more detail about the package that I suggest you take a look at. It gives more detail on the forward and backward passes and some of the limitations of the package (e.g. no missing values). If you like the regression surface plots I recommend you also check out the plotmo vignette <a href="http://www.milbo.org/doc/plotmo-notes.pdf">Plotting regression surfaces with plotmo</a>.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>we also include a constant term.<a href="#fnref1">↩</a></p></li>
+</ol>
 </div>
