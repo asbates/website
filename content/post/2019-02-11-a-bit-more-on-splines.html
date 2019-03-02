@@ -23,7 +23,7 @@ tags:
 <h3>General Spline Basis</h3>
 <p>Previously we looked at the basis for cubic and quartic splines. In general we can have order <span class="math inline">\(M\)</span> splines with <span class="math inline">\(k\)</span> knots <span class="math inline">\(\xi_1, \xi_2, ..., \xi_k\)</span>. These are piecewise polynomials of degree <span class="math inline">\(M-1\)</span> with continuous derivatives up to order <span class="math inline">\(M-2\)</span>. The basis for an order <span class="math inline">\(M\)</span> spline has the form <span class="math display">\[
 \begin{align*}
-h_j(x) &amp;= x^{j-i} &amp;\text{for  } j = 1, 2, ..., M \\
+h_j(x) &amp;= x^{j-1} &amp;\text{for  } j = 1, 2, ..., M \\
 h_{M+\ell}(x) &amp;= (x-\xi_{\ell})_+^{M-1} &amp;\text{for  } \ell = 1, 2, ..., k.
 \end{align*}
 \]</span> This is called a <strong>truncated-power basis</strong> (the powers about the knots are truncated by the +). A cubic spline has order <span class="math inline">\(M = 4\)</span>. My guess is because (for one knot) there are four terms: <span class="math inline">\(1, x, x^2, (x-\xi)_+^3\)</span>. Basically, the order <span class="math inline">\(M\)</span> is one more than the degree of the piecewise polynomials used. Apparently people claim that cubic splines are the lowest order splines that look smooth to the human eye. As in we can’t see any discontinuity at the knots. This is probably why cubic splines are the most common. Why use a more complicated basis when a cubic cubic splines look smooth enough?</p>

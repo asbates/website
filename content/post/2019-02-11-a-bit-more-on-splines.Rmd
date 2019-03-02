@@ -27,7 +27,7 @@ For now, we are just considering univariate $x$. This was sort of implicit in th
 Previously we looked at the basis for cubic and quartic splines. In general we can have order $M$ splines with $k$ knots $\xi_1, \xi_2, ..., \xi_k$. These are piecewise polynomials of degree $M-1$ with continuous derivatives up to order $M-2$. The basis for an order $M$ spline has the form
 \[
 \begin{align*}
-h_j(x) &= x^{j-i} &\text{for  } j = 1, 2, ..., M \\
+h_j(x) &= x^{j-1} &\text{for  } j = 1, 2, ..., M \\
 h_{M+\ell}(x) &= (x-\xi_{\ell})_+^{M-1} &\text{for  } \ell = 1, 2, ..., k.
 \end{align*}
 \]
