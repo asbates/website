@@ -1,0 +1,38 @@
+---
+title: Multivariate Adaptive Regression Splines (MARS)
+author: ''
+date: '2019-03-02'
+slug: multivariate-adaptive-regression-splines
+categories:
+  - nonlinear models
+  - R
+  - splines
+  - MARS
+tags:
+  - nonlinear models
+  - R
+  - splines
+  - MARS
+---
+
+As you may have guessed from the title of the post, we are going to talk about multivariate adaptive regression splines or [MARS](https://projecteuclid.org/euclid.aos/1176347963) for short. MARS is multivariate spline method (obviously) that can handle a large number of inputs.
+
+Multivariate spline methods can have some problems with a high dimensional input $x$. Why? Because the size of the basis grows exponentially with the number of inputs. Suppose we have two inputs, $x_1$ and $x_2$, along with a set of basis functions $h_{1k}(x_1), k = 1, 2, ..., M_1$ for $x_1$ and basis functions $h_{2k}(x_2), k = 1, 2, ..., M_2$ for $x_2$. These can be any sort of spline basis functions. For example, each of the $h$s can define a natural spline basis. To estimate our function $f$, we combine these two bases together multiplicatively to get
+\[
+g_{jk}(x) = h_{1j}(x_1)h_{2k}(x_2)
+\]
+where $j$ runs from 1 to $M_1$ and $k$ runs from 1 to $M_2$. This defines what is called a *tensor product basis* for $f$ which looks like
+\[
+f(x) = \sum_{j=1}^{M_1} \sum_{k = 1}^{M_2} \beta_{jk}g_{jk}(x).
+\]
+The number of basis functions grows extremely fast. To see this, imagine we want to use cubic splines with two knots. In this case there are 6 basis functions for $x_1$ and 6 basis functions for $x_2$. When we combine these to get a basis for $f$, we get 36 ($6^2$) basis functions $g_{jk}$ because we multiply each of the basis functions $h_{1k}$ for $x_1$ with each of the functions $h_{2k}$ for $x_2$. Three inputs would give $6^3$ or 216 basis functions for $f$. Wow! We went from 6 to 216 just by adding two more variables. And this is assuming only two knots for each $x_i$. In reality we would likely have more knots thus more basis functions and the numbers would be even bigger. MARS attempts to remedy this by considering but not including all possible basis functions for each $x_i$. But before we get into that, let's see what kind of basis functions MARS uses.
+
+
+### MARS Basis Functions
+
+
+
+
+
+
+

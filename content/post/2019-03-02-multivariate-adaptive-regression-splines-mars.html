@@ -1,0 +1,28 @@
+---
+title: Multivariate Adaptive Regression Splines (MARS)
+author: ''
+date: '2019-03-02'
+slug: multivariate-adaptive-regression-splines
+categories:
+  - nonlinear models
+  - R
+  - splines
+  - MARS
+tags:
+  - nonlinear models
+  - R
+  - splines
+  - MARS
+---
+
+
+
+<p>As you may have guessed from the title of the post, we are going to talk about multivariate adaptive regression splines or <a href="https://projecteuclid.org/euclid.aos/1176347963">MARS</a> for short. MARS is multivariate spline method (obviously) that can handle a large number of inputs.</p>
+<p>Multivariate spline methods can have some problems with a high dimensional input <span class="math inline">\(x\)</span>. Why? Because the size of the basis grows exponentially with the number of inputs. Suppose we have two inputs, <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>, along with a set of basis functions <span class="math inline">\(h_{1k}(x_1), k = 1, 2, ..., M_1\)</span> for <span class="math inline">\(x_1\)</span> and basis functions <span class="math inline">\(h_{2k}(x_2), k = 1, 2, ..., M_2\)</span> for <span class="math inline">\(x_2\)</span>. These can be any sort of spline basis functions. For example, each of the <span class="math inline">\(h\)</span>s can define a natural spline basis. To estimate our function <span class="math inline">\(f\)</span>, we combine these two bases together multiplicatively to get <span class="math display">\[
+g_{jk}(x) = h_{1j}(x_1)h_{2k}(x_2)
+\]</span> where <span class="math inline">\(j\)</span> runs from 1 to <span class="math inline">\(M_1\)</span> and <span class="math inline">\(k\)</span> runs from 1 to <span class="math inline">\(M_2\)</span>. This defines what is called a <em>tensor product basis</em> for <span class="math inline">\(f\)</span> which looks like <span class="math display">\[
+f(x) = \sum_{j=1}^{M_1} \sum_{k = 1}^{M_2} \beta_{jk}g_{jk}(x).
+\]</span> The number of basis functions grows extremely fast. To see this, imagine we want to use cubic splines with two knots. In this case there are 6 basis functions for <span class="math inline">\(x_1\)</span> and 6 basis functions for <span class="math inline">\(x_2\)</span>. When we combine these to get a basis for <span class="math inline">\(f\)</span>, we get 36 (<span class="math inline">\(6^2\)</span>) basis functions <span class="math inline">\(g_{jk}\)</span> because we multiply each of the basis functions <span class="math inline">\(h_{1k}\)</span> for <span class="math inline">\(x_1\)</span> with each of the functions <span class="math inline">\(h_{2k}\)</span> for <span class="math inline">\(x_2\)</span>. Three inputs would give <span class="math inline">\(6^3\)</span> or 216 basis functions for <span class="math inline">\(f\)</span>. Wow! We went from 6 to 216 just by adding two more variables. And this is assuming only two knots for each <span class="math inline">\(x_i\)</span>. In reality we would likely have more knots thus more basis functions and the numbers would be even bigger. MARS attempts to remedy this by considering but not including all possible basis functions for each <span class="math inline">\(x_i\)</span>. But before we get into that, let’s see what kind of basis functions MARS uses.</p>
+<div id="mars-basis-functions" class="section level3">
+<h3>MARS Basis Functions</h3>
+</div>
