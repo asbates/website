@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>A First Look at Keras</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Andrew Bates" />
+    <meta name="date" content="2019-03-03" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# A First Look at Keras
+## Stat 696
+### Andrew Bates
+### 2019-03-03
+
+---
+
+
+
+
+
+  ![](keras-logo-2018-large-1200.png)&lt;!-- --&gt;
+
+### What Is Keras
+
+
+From [the documentation](https://keras.io):
+
+  Keras is a high-level neural networks API, written in Python and capable of running on top of TensorFlow, CNTK, or Theano...
+  
+---
+
+  ![](landing_icon-tf_logo_halo_480.jpg)&lt;!-- --&gt;
+
+
+### What is TensorFlow
+
+From [the website](https://www.tensorflow.org):
+
+  TensorFlow is an open source software library for high performance numerical computation...
+
+
+---
+class: middle
+
+### What Does That Mean
+
+TensorFlow does math good.
+
+Keras uses TensorFlow to do math for neural networks.
+
+???
+Both can be use from Python and R.
+
+---
+
+### What Keras Looks Like in Python
+
+
+```python
+from keras.models import Sequential
+from keras.layers import Dense
+
+# initialize model
+model = Sequential()
+
+# add a hidden layer
+model.add(Dense(units = 10, activation = 'sigmoid', input_dim = p))
+
+# add an output layer
+model.add(Dense(units = 1))
+
+# set things up for training
+model.compile(loss = 'mse', optimizer = 'sgd', metrics = ['mse'])
+
+# train the model
+model.fit(x_train, y_train)
+```
+
+
+---
+
+### What Keras Looks Like in R
+
+
+```r
+library(keras)
+library(dplyr)  # for the %&gt;% 
+
+model &lt;- keras_model_sequential() %&gt;% # initialize a model
+  layer_dense(units = 10, 
+              activation = "sigmoid",
+              input_shape = p) %&gt;% # add a hidden layer
+  layer_dense(units = 1) # add an output layer
+
+# set things up for training
+model %&gt;% compile(
+  loss = "mse",
+  optimizer = optimizer_sgd(),
+  metrics = "mse"
+)
+
+# train the model
+model %&gt;% fit(
+  x_train,
+  y_train
+)
+```
+
+
+---
+class: middle
+
+### The Common Workflow
+
+1. Create a model.
+2. Add layers to the model.
+3. Specify loss function, optimization algorithm, etc.
+4. Train the model.
+
+
+---
+class: middle 
+
+### Resources
+
+[https://keras.io](https://keras.io) - Keras Python documentation
+
+[https://keras.rstudio.com](https://keras.rstudio.com) - Keras R documentation
+
+[https://blogs.rstudio.com/tensorflow/](https://blogs.rstudio.com/tensorflow/https://tensorflow.rstudio.com) - TensorFlow/Keras blog by RStudio
+
+[https://www.tensorflow.org](https://www.tensorflow.org)
+
+---
+class: middle
+
+### Demo Time!
+
+The files can be found at
+[https://github.com/asbates/neural-nets/tree/master/keras-tutorial](https://github.com/asbates/neural-nets/tree/master/keras-tutorial)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
