@@ -1,0 +1,26 @@
+---
+title: 'Generalized Additive Models Part 1: Background'
+author: ''
+date: '2019-03-06'
+slug: generalized-additive-models-part-1-background
+categories: []
+tags: []
+---
+
+
+
+<p>This is the first post in a mini series on generalized additive models or GAMs. Here we will cover a bit of background on GAMs. This will be a high level overview because many of the ideas from before carry over. In future post(s) we will see how we can use them with data.</p>
+<div id="whats-with-the-name" class="section level3">
+<h3>What’s with the Name</h3>
+<p>Let’s break down the name because this will give some insight into their use cases. <em>Generalized</em> tells us that they can be used to model a variety of responses. Generalized linear models is a class of linear models that provide a unified approach to modeling different types of responses. A special case of this is the linear regression that we all know and love where the response is assumed to follow a normal distribution. Logistic regression is another example where we assume the response is Bernoulli. Actually, we can use generalized linear models for any response that is assumed to follow the exponential family of distributions. We can also extend this idea to mixed models via Generalized Linear Mixed Models. So any type of model with <em>generalized</em> in the name can be used to model responses that come from the exponential family. Since GAMs have <em>generalized</em> in their name, you better believe they can too.</p>
+<p>So we can use GAMs to model a variety of responses but what makes them different from Generalized Linear Models? The linear part. GAMs don’t restrict themselves to a linear relationship between the predictors and the response. Instead, we model the response by combining nonlinear functions of the inputs. But we aren’t restricted to strictly nonlinear functions. We can mix and match as we see fit. Now we could do this in linear regression by including for example <span class="math inline">\(log(x_1)\)</span> but this is usually only feasible when we have a small number of variables and we only do a few such transformations. GAMs provide a more flexible approach.</p>
+<p>The <strong>additive</strong> in GAMs is pretty clear. GAMs are additive models. After applying nonliear (or linear) functions to the inputs, we combine them additively. For example, a model like <span class="math inline">\(y = x_1\exp(x2)\)</span> would not be a GAM.</p>
+</div>
+<div id="the-model" class="section level3">
+<h3>The Model</h3>
+<p>Alright, now that we have an idea of what GAMs are, let’s see what the model looks like. A GAM has the form <span class="math display">\[
+f(x) = \beta_0 + g_1(x_1) + g_2(x_2) + \cdots + g_p(x_p)
+\]</span> where <span class="math inline">\(g_i\)</span> is some nonlinear function of <span class="math inline">\(x_i\)</span>. So we apply some function to each of our inputs <span class="math inline">\(x_i\)</span> then add up all those functions to get our <span class="math inline">\(f\)</span>. If the response is say Bernoulli then we need to apply another function first, just like in Generalized Linear Models.</p>
+<p>In theory we can use any sort of functions <span class="math inline">\(g_i\)</span> but in practice they are smooth functions. Usually some sort of spline but we could use for example local regression as well. We could also combine two or more <span class="math inline">\(x\)</span>s with something like <span class="math inline">\(g_{12}(x_1, x_2)\)</span>. The idea here is similar do what we saw <a href="/2019/03/01/thin-plate-splines">previously</a> where we said a multivariate spline model could be built by fitting splines to each input, something like <code>lm(y ~ bs(x1) + bs(x2), df)</code>. Actually, this would be a special case of a GAM. But GAMs give us more flexibility than this approach.</p>
+<p>The flexibility of GAMs are part of what make them so nice. We could for example mix nonlinear smooths with linear components, include categorical variables, or have nonlinear functions of several variables. We can also use them for time series which we will see in a future post. The generality of GAMs essentially allow us to include whatever types of terms we deem necessary, as long as the form of <span class="math inline">\(f\)</span> is additive.</p>
+</div>

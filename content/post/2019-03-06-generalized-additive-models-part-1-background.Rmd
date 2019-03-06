@@ -1,0 +1,37 @@
+---
+title: 'Generalized Additive Models Part 1: Background'
+author: ''
+date: '2019-03-06'
+slug: generalized-additive-models-part-1-background
+categories: []
+tags: []
+---
+
+This is the first post in a mini series on generalized additive models or GAMs. Here we will cover a bit of background on GAMs. This will be a high level overview because many of the ideas from before carry over. In future post(s) we will see how we can use them with data.
+
+
+### What's with the Name
+
+Let's break down the name because this will give some insight into their use cases. *Generalized* tells us that they can be used to model a variety of responses. Generalized linear models is a class of linear models that provide a unified approach to modeling different types of responses. A special case of this is the linear regression that we all know and love where the response is assumed to follow a normal distribution. Logistic regression is another example where we assume the response is Bernoulli. Actually, we can use generalized linear models for any response that is assumed to follow the exponential family of distributions. We can also extend this idea to mixed models via Generalized Linear Mixed Models. So any type of model with *generalized* in the name can be used to model responses that come from the exponential family. Since GAMs have *generalized* in their name, you better believe they can too.
+
+So we can use GAMs to model a variety of responses but what makes them different from Generalized Linear Models? The linear part. GAMs don't restrict themselves to a linear relationship between the predictors and the response. Instead, we model the response by combining nonlinear functions of the inputs. But we aren't restricted to strictly nonlinear functions. We can mix and match as we see fit. Now we could do this in linear regression by including for example $log(x_1)$ but this is usually only feasible when we have a small number of variables and we only do a few such transformations. GAMs provide a more flexible approach.
+
+The **additive** in GAMs is pretty clear. GAMs are additive models. After applying nonliear (or linear) functions to the inputs, we combine them additively. For example, a model like $y = x_1\exp(x2)$ would not be a GAM.
+
+
+### The Model
+
+Alright, now that we have an idea of what GAMs are, let's see what the model looks like. A GAM has the form
+\[
+f(x) = \beta_0 + g_1(x_1) + g_2(x_2) + \cdots + g_p(x_p)
+\]
+where $g_i$ is some nonlinear function of $x_i$. So we apply some function to each of our inputs $x_i$ then add up all those functions to get our $f$. If the response is say Bernoulli then we need to apply another function first, just like in Generalized Linear Models.
+
+In theory we can use any sort of functions $g_i$ but in practice they are smooth functions. Usually some sort of spline but we could use for example local regression as well. We could also combine two or more $x$s with something like $g_{12}(x_1, x_2)$. The idea here is similar do what we saw [previously](/2019/03/01/thin-plate-splines) where we said a multivariate spline model could be built by fitting splines to each input, something like `lm(y ~ bs(x1) + bs(x2), df)`. Actually, this would be a special case of a GAM. But GAMs give us more flexibility than this approach.
+
+
+The flexibility of GAMs are part of what make them so nice. We could for example mix nonlinear smooths with linear components, include categorical variables, or have nonlinear functions of several variables. We can also use them for time series which we will see in a future post. The generality of GAMs essentially allow us to include whatever types of terms we deem necessary, as long as the form of $f$ is additive.
+
+
+
+
