@@ -1,0 +1,14 @@
+---
+title: 'Generalized Additive Models Part 2: mgcv'
+author: ''
+date: '2019-03-15'
+slug: generalized-additive-models-part-2-mgcv
+categories: []
+tags: []
+draft: true
+---
+
+
+
+<p>In this post, we are going to demonstrate how to use the <code>mgcv</code> R package to fit generalized additive models. In a sense, this is a culmination of what I have learned so far studying nonliear models. Everything I have done since my <a href="/2019/02/04/what-are-splines">first post</a> on nonlinear models has been about splines and GAMs in <code>mgcv</code> are implemented with splines. I could have jumped straight in to GAMs but I didn’t think it would be worthwhile before having a solid understanding of splines. I’m not ‘done’ with splines as I will be seeing how they can be applied to time series but this is basically the end of the first phase of my nonlinear models adventure.</p>
+<p>So, what is this post going to be about? I hope to demonstrate the flexibilty of GAMs by giving several examples of how to fit different types of models in the <code>mgcv</code> package. I will also briefly describe how to assess the fit of a GAM. I won’t be building up to a single, final model as one would do if they were doing a real analysis. Rather, I will be showing what types of terms GAMs can handle and the different ways in which they can be combined.</p>
