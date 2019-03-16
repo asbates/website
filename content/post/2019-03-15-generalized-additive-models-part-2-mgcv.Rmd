@@ -5,13 +5,135 @@ date: '2019-03-15'
 slug: generalized-additive-models-part-2-mgcv
 categories: []
 tags: []
-draft: true
 ---
 
 In this post, we are going to demonstrate how to use the `mgcv` R package to fit generalized additive models. In a sense, this is a culmination of what I have learned so far studying nonliear models. Everything I have done since my [first post](/2019/02/04/what-are-splines) on nonlinear models has been about splines and GAMs in `mgcv` are implemented with splines. I could have jumped straight in to GAMs but I didn't think it would be worthwhile before having a solid understanding of splines. I'm not 'done' with splines as I will be seeing how they can be applied to time series but this is basically the end of the first phase of my nonlinear models adventure.
 
-
 So, what is this post going to be about? I hope to demonstrate the flexibilty of GAMs by giving several examples of how to fit different types of models in the `mgcv` package. I will also briefly describe how to assess the fit of a GAM. I won't be building up to a single, final model as one would do if they were doing a real analysis. Rather, I will be showing what types of terms GAMs can handle and the different ways in which they can be combined.
 
+### The Data
 
+For this post we will be using the Ames Housing Dataset. The [Ames Housing](https://cran.r-project.org/web/packages/AmesHousing/index.html) R package provides the original data set along with a cleaned version of the data. We will be using a subset of the cleaned data set. Specifically, we will be modeling the sale price of a house as a function of lot area, above ground square footage, number of above ground bedrooms, number of full baths, and size of the garage in terms of the number of cars it can hold. There are a lot of other variables but I picked these few to keep things manageable.
+
+
+```{r options, echo = FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r data-setup}
+library(tidyverse)
+library(mgcv)
+library(AmesHousing)
+
+ames <- make_ames() %>% 
+  select(Sale_Price,
+         Lot_Area,
+         Bldg_Type,
+         Gr_Liv_Area,
+         Bedroom_AbvGr,
+         Full_Bath,
+         Garage_Cars)
+
+names(ames) <- tolower(names(ames))
+```
+
+
+Let's look at a few plots to get a feel for the data. We'll start by looking at the relationship between lot area and sale price.
+
+```{r area-price-scatter}
+ggplot(ames, aes(lot_area, sale_price)) +
+  geom_point()
+```
+
+This doesn't look so good. Besides the few extreme values, everything looks bunched up. We can see if a log transformation helps.
+
+```{r area-price-scatter-log}
+ggplot(ames, aes(lot_area, sale_price)) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+This looks better. There isn't an obvious relationship here but it is obvious that the relationship is *not* linear. Good thing we are using nonlinear models. Actually, it would be fine if the relationship was linear because, as we will see shortly, `mgcv` has a way of telling you if there is a linear relationship.
+
+### Our First GAM
+
+Alright, let's go ahead and fit a GAM to see what it looks like and what we can do with it. Based on what we saw in the plots, we will use log transformed versions of sale price and lot area.
+
+```{r first-fit}
+ames <- ames %>% 
+  mutate(log_sale_price = log(sale_price),
+         log_lot_area = log(lot_area))
+
+log_log_lot_area <- gam(log_sale_price ~ s(log_lot_area),
+                    data = ames,
+                    method = "REML")
+```
+
+
+Let's break down what is going on here. To fit a GAM in `mgcv` we use the function ... `gam`. The `s()` function wrapped around lot area tells `gam`  we want to use a smooth version of lot area and not lot area itself. By default it uses a thin plate spline but there are other options. For example, we could use a cubic spline basis with `s(x, bs = "cr")`. The `method` argument specifies we want to use restricted maximum likelihood. I've heard it's best to use REML in most cases so that's what we are going to stick with here. 
+
+Now let's investigate our fit by trying a few things out. We will start with just printing the model and then look at what methods are available.
+
+```{r print-and-methods}
+log_log_lot_area
+methods(class = "gam")
+```
+
+Great, we have a summary method. What does that do?
+
+```{r summary-method}
+summary(log_log_lot_area)
+```
+
+There are two main sections here, 'Parametric coefficients' and 'Approximate significance of smooth terms'. The parametric section gives the standard summary for the non-smooth terms; in this case we only have the intercept. The next section describes our smooth term `s(log_lot_area)`. The first column, `edf`, is the effective degrees of freedom of the term, the trace of the smoother (or hat) matrix. When the degrees of freedom is 1, this is a linear term. So GAMs don't try to force nonliearity. If a term should be linear, `gam` will figure it out. If you're unsure whether a varible should be included linearly in a model, `gam` can help you figure this out. Another nice thing about the degrees of freedom is 2 degrees of freedom corresponds to a quadratic, three to a cubic, etc. The next three columns provide information regarding a test of significance for the smooth term. The null is that the whole smooth `s(log_lot_area)` is zero. The p-value here is an approximation and shouldn't be taken too seriously[^1]. 
+
+### Plotting Our GAM
+
+Another way to assess whether a smooth term should be included is by examing a partial effects plot which we will look at now. We will start by using all the default arguments.
+
+```{r plot-method}
+plot(log_log_lot_area)
+```
+
+This gives us a plot of the variable of interest vs. its smooth version. Also plotted is the smooth with $\pm$ 2 standard errors added on, essentially showing a 95% confidence interval. We can assess whether or not this term should be included using the rule-of-thumb: if we can draw a horizontal line through the confidence interval, it should not be included. In this case we can't do that so we would want to keep this term. Let's change a few of the plotting arguments to get a feel of what we can change.
+
+```{r plot-method-extra}
+plot(log_log_lot_area,
+     residuals = TRUE,
+     rug = FALSE,
+     shade = TRUE,
+     shift = coef(log_log_lot_area)[1],
+     seWithMean = TRUE)
+```
+
+This is a bit more complex than the first call to `plot` so let's describe what each one of these arguments does. We'll start with `shade` because that's the most obvious: should we shade the confidence region? Similarly, `rug` specifies wheter or not a rug is added to the plot. I rarely use these and with the residuals added, I don't really see a benfit to a rug as well. And that brings us to the `residuals` argument. These are actually partial residuals. The documentation describes them as:
+
+> Partial residuals for a smooth term are the residuals that would be obtained by dropping the term concerned from the model, while leaving all other estimates fixed.
+
+So if we did not have `s(log_lot_area)` in the model, and just the intercept, the residuals would be the points shown in the graph. The `shift` argument just adds a constant to the smooth. In this case we are adding on the intercept. This gives us a better sense of what is going on because it shows how the smooth effects the (log) sale price. The first smooth plot ranges from -1 to 1 which doesn't really tell us as much about the response. And finally we have `seWithMean`. When `TRUE`, the uncertainty of the mean is incorporated into the confidence band. If `FALSE`, only the uncertainty of the smooth is used.
+
+### Checking Our GAM
+
+We already saw how to assess if a smooth term should be included in our model via p-values and the 'line test'. If we are satisfied with this and want to go further with diagnosing our model we can use the `gam.check` function. This function provides us with diagnostic information in the form of plots
+
+It provides us with diagnostic information in the form of pictures and numbers. The plots are of the residuals and the numbers tell us about convergence and the dimension of the basis for the smooth. Let's see what this looks like for our model:
+
+```{r gam-check}
+gam.check(log_log_lot_area)
+```
+
+As we can see, the plots generated are the usual residual diagnostic plots. As for the numeric summaries, the convergence stuff probably won't matter in most cases. The important thing is that the model did converge. What we care about more is the second part. Basically, a test is run to see of the dimension of the basis for the smooth is too low. If it is, we are probably over smoothing and want some more wiggliness. Be careful with the p-value here as it is opposite of what we are used to. If we have a good basis dimension, the p-value will be high. If the p-value is low, it indicates problems. In our case the p-value is really small so we may need a higher dimensional basis. We can do this with something like `s(log_lot_area, k = 30)` but we won't worry about it here. Also note the print out helpfully tells us that low p-values are especially troublesome when our effective degrees of freedom are close to `k'` which is the case in this model.
+
+
+### Next Steps
+
+Hopefully by now you have a basic understanding of how you might use a GAM with the `mgcv` package. In the next post we will dig a little deeper by seeing how to fit different types of GAM models. We will mix different types of terms and different types of smooths in order to illustrate the flexibiltiy GAMs.
+
+
+
+
+
+
+[1]: p-values should probably never be taken too seriously.
 
