@@ -12,7 +12,7 @@ In the [previous post](/2019/03/15/generalized-additive-models-part-2-mgcv) we s
 
 ### The Data
 
-We will be using the Ames Housing Dataset as before. But this time we will be including two more variables. Last time we modeled the sale price of a home as a smooth function of the lot size. This time we will add in the above ground square footage and the building type. There are a lot of other variables in this data set but to keep things manageable we will only be looking at these three. We say before that both sale price and lot area warranted log transformations. We will stick with these transformations and also log transform the square footage of the house.
+We will be using the Ames Housing Dataset as before. But this time we will be including two more variables. Last time we modeled the sale price of a home as a smooth function of the lot size. This time we will add in the above ground square footage and the building type. There are a lot of other variables in this data set but to keep things manageable we will only be looking at these three. We saw before that both sale price and lot area warranted log transformations. We will stick with these transformations and also log transform the square footage of the house.
 
 
 ```{r get-data, message = FALSE}
@@ -25,10 +25,7 @@ ames <- make_ames() %>%
   select(Sale_Price,
          Lot_Area,
          Bldg_Type,
-         Gr_Liv_Area,
-         Bedroom_AbvGr,
-         Full_Bath,
-         Garage_Cars)
+         Gr_Liv_Area)
 
 names(ames) <- tolower(names(ames))
 
@@ -61,12 +58,12 @@ area_type <- gam(log_sale_price ~ s(log_lot_area) + bldg_type,
 summary(area_type)
 ```
 
-Since building type is a factor and we included it as a linear term, `gam` considers it a parametric term. This means that building type is included as a dummy variable just like in an `lm` model. But note that the smooth term is different than when we didn't include building type. If we pass this model to `plot` we will again get a plot of the smooth term.
+Since building type is a factor and we included it as a linear term, `gam` considers it a parametric term. This means that building type is included as a dummy variable just like in an `lm` model. But note that the smooth term is different from when we didn't include building type. If we pass this model to `plot` we will again get a plot of the smooth term.
 
 
 ### One Smooth Per Level
 
-What if we wanted to include a separate smooth term for each level of building type? This might make more sense because the lot areas of say a townhouse will likely be different than the lot areas of a single family home. To do this, we need to put building type inside the smoother `s()`.
+What if we wanted to include a separate smooth term for each level of building type? This might make more sense because the lot area of say a townhouse will likely be different than the lot area of a single family home. To do this, we need to put building type inside the smoother `s()`.
 
 ```{r area-by-type}
 area_by_type <- gam(log_sale_price ~ s(log_lot_area, by = bldg_type),
@@ -142,7 +139,7 @@ vis.gam(area_sf_interact,
 ```
 
 
-### Some Notes
+### A Note
 
 Hopefully what we did here gives you a better understanding of what we can do with GAMs and how flexible they are. I think this flexibility is great but there is a cost to it. Because we can combine different types of terms in different ways, we have a lot of options when building a GAM, possibly too many. For a problem with a handful of covariates and a lot of domain knowledge, this shouldn't be an issue. But let's say you have a data set with 50 variables of different types and you don't have any knowledge of the underlying subject. In that case I don't think a GAM would be a good option because there are just too many ways to combine that many variables. For instance, should you use a separate smooth for each numeric variable? Which numeric variables should have interactions? Which numeric variables should include a separate smooth for each level of a factor? Usually we are concerned with which variables to include but with GAMs we also need to consider how we are going to include them. Anyways, just like anything else, GAMs can be great but it really depends on the problem at hand.
 

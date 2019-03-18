@@ -12,7 +12,7 @@ tags: []
 <p>In the <a href="/2019/03/15/generalized-additive-models-part-2-mgcv">previous post</a> we saw how to fit simple GAM using the <code>mgcv</code> package. We also saw how to plot and check a fitted gam and discussed some of the details behind the plots and checks. This time we will see how we can extend our model to incorporate more terms and how we can combine those terms in different ways to get different types of models. My hope is that this demonstrates the flexibility of GAMs that I mentioned previously. We won’t be building up to a single, final model as one would do if they were doing a real analysis. Rather, we will see what types of terms GAMs can handle and the different ways in which they can be combined.</p>
 <div id="the-data" class="section level3">
 <h3>The Data</h3>
-<p>We will be using the Ames Housing Dataset as before. But this time we will be including two more variables. Last time we modeled the sale price of a home as a smooth function of the lot size. This time we will add in the above ground square footage and the building type. There are a lot of other variables in this data set but to keep things manageable we will only be looking at these three. We say before that both sale price and lot area warranted log transformations. We will stick with these transformations and also log transform the square footage of the house.</p>
+<p>We will be using the Ames Housing Dataset as before. But this time we will be including two more variables. Last time we modeled the sale price of a home as a smooth function of the lot size. This time we will add in the above ground square footage and the building type. There are a lot of other variables in this data set but to keep things manageable we will only be looking at these three. We saw before that both sale price and lot area warranted log transformations. We will stick with these transformations and also log transform the square footage of the house.</p>
 <pre class="r"><code>library(tidyverse)
 library(mgcv)
 library(AmesHousing)
@@ -22,10 +22,7 @@ ames &lt;- make_ames() %&gt;%
   select(Sale_Price,
          Lot_Area,
          Bldg_Type,
-         Gr_Liv_Area,
-         Bedroom_AbvGr,
-         Full_Bath,
-         Garage_Cars)
+         Gr_Liv_Area)
 
 names(ames) &lt;- tolower(names(ames))
 
@@ -94,11 +91,11 @@ summary(area_type)</code></pre>
 ## 
 ## R-sq.(adj) =  0.288   Deviance explained = 29.1%
 ## -REML = 1058.7  Scale est. = 0.11835   n = 2930</code></pre>
-<p>Since building type is a factor and we included it as a linear term, <code>gam</code> considers it a parametric term. This means that building type is included as a dummy variable just like in an <code>lm</code> model. But note that the smooth term is different than when we didn’t include building type. If we pass this model to <code>plot</code> we will again get a plot of the smooth term.</p>
+<p>Since building type is a factor and we included it as a linear term, <code>gam</code> considers it a parametric term. This means that building type is included as a dummy variable just like in an <code>lm</code> model. But note that the smooth term is different from when we didn’t include building type. If we pass this model to <code>plot</code> we will again get a plot of the smooth term.</p>
 </div>
 <div id="one-smooth-per-level" class="section level3">
 <h3>One Smooth Per Level</h3>
-<p>What if we wanted to include a separate smooth term for each level of building type? This might make more sense because the lot areas of say a townhouse will likely be different than the lot areas of a single family home. To do this, we need to put building type inside the smoother <code>s()</code>.</p>
+<p>What if we wanted to include a separate smooth term for each level of building type? This might make more sense because the lot area of say a townhouse will likely be different than the lot area of a single family home. To do this, we need to put building type inside the smoother <code>s()</code>.</p>
 <pre class="r"><code>area_by_type &lt;- gam(log_sale_price ~ s(log_lot_area, by = bldg_type),
                     data = ames,
                     method = &quot;REML&quot;)
@@ -195,7 +192,7 @@ summary(area_sf)</code></pre>
         theta = 45)</code></pre>
 <p><img src="/post/2019-03-18-generalized-additive-models-part-3-adding-complexity_files/figure-html/area-sf-vis-gam-1.png" width="672" /></p>
 </div>
-<div id="some-notes" class="section level3">
-<h3>Some Notes</h3>
+<div id="a-note" class="section level3">
+<h3>A Note</h3>
 <p>Hopefully what we did here gives you a better understanding of what we can do with GAMs and how flexible they are. I think this flexibility is great but there is a cost to it. Because we can combine different types of terms in different ways, we have a lot of options when building a GAM, possibly too many. For a problem with a handful of covariates and a lot of domain knowledge, this shouldn’t be an issue. But let’s say you have a data set with 50 variables of different types and you don’t have any knowledge of the underlying subject. In that case I don’t think a GAM would be a good option because there are just too many ways to combine that many variables. For instance, should you use a separate smooth for each numeric variable? Which numeric variables should have interactions? Which numeric variables should include a separate smooth for each level of a factor? Usually we are concerned with which variables to include but with GAMs we also need to consider how we are going to include them. Anyways, just like anything else, GAMs can be great but it really depends on the problem at hand.</p>
 </div>
