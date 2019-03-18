@@ -9,25 +9,20 @@ tags: []
 
 
 
-<p>In this post, we are going to demonstrate how to use the <code>mgcv</code> R package to fit generalized additive models. I hope to demonstrate the flexibilty of GAMs by giving several examples of how to fit different types of models in the <code>mgcv</code> package. I will also briefly describe how to assess the fit of a GAM. I won’t be building up to a single, final model as one would do if they were doing a real analysis. Rather, I will be showing what types of terms GAMs can handle and the different ways in which they can be combined.</p>
+<p>In this post, we are going to demonstrate how to use the <code>mgcv</code> R package to fit generalized additive models. For now we will be focusing on a simple model with a single term. We will use this model to learn how to fit a GAM, what we can do with a fitted model, how to assess the fit, and a little bit about what goes on under the hood.</p>
 <div id="the-data" class="section level3">
 <h3>The Data</h3>
-<p>For this post we will be using the Ames Housing Dataset. The <a href="https://cran.r-project.org/web/packages/AmesHousing/index.html">Ames Housing</a> R package provides the original data set along with a cleaned version of the data. We will be using a subset of the cleaned data set. Specifically, we will be modeling the sale price of a house as a function of lot area, above ground square footage, number of above ground bedrooms, number of full baths, and size of the garage in terms of the number of cars it can hold. There are a lot of other variables but I picked these few to keep things manageable.</p>
+<p>For this post we will be using the Ames Housing Dataset. The <a href="https://cran.r-project.org/web/packages/AmesHousing/index.html">Ames Housing</a> R package provides the original data set along with a cleaned version of the data. We will be using a subset of the cleaned data set. Specifically, we will be modeling the sale price of a house as a function of the lot size. This is probably not the best single variable model but that isn’t the focus of this post. I really just want to demonstrate how to use the <code>mgcv</code> package.</p>
 <pre class="r"><code>library(tidyverse)
 library(mgcv)
 library(AmesHousing)
 
 ames &lt;- make_ames() %&gt;% 
   select(Sale_Price,
-         Lot_Area,
-         Bldg_Type,
-         Gr_Liv_Area,
-         Bedroom_AbvGr,
-         Full_Bath,
-         Garage_Cars)
+         Lot_Area)
 
 names(ames) &lt;- tolower(names(ames))</code></pre>
-<p>Let’s look at a few plots to get a feel for the data. We’ll start by looking at the relationship between lot area and sale price.</p>
+<p>Let’s look at a plot of sale price vs. lot area to get a feel for the relationship between them.</p>
 <pre class="r"><code>ggplot(ames, aes(lot_area, sale_price)) +
   geom_point()</code></pre>
 <p><img src="/post/2019-03-15-generalized-additive-models-part-2-mgcv_files/figure-html/area-price-scatter-1.png" width="672" /></p>
@@ -91,14 +86,14 @@ log_log_lot_area &lt;- gam(log_sale_price ~ s(log_lot_area),
 ## 
 ## R-sq.(adj) =   0.21   Deviance explained = 21.2%
 ## -REML =   1205  Scale est. = 0.13125   n = 2930</code></pre>
-<p>There are two main sections here, ‘Parametric coefficients’ and ‘Approximate significance of smooth terms’. The parametric section gives the standard summary for the non-smooth terms; in this case we only have the intercept. The next section describes our smooth term <code>s(log_lot_area)</code>. The first column, <code>edf</code>, is the effective degrees of freedom of the term, the trace of the smoother (or hat) matrix. When the degrees of freedom is 1, this is a linear term. So GAMs don’t try to force nonliearity. If a term should be linear, <code>gam</code> will figure it out. If you’re unsure whether a varible should be included linearly in a model, <code>gam</code> can help you figure this out. Another nice thing about the degrees of freedom is 2 degrees of freedom corresponds to a quadratic, three to a cubic, etc. The next three columns provide information regarding a test of significance for the smooth term. The null is that the whole smooth <code>s(log_lot_area)</code> is zero. The p-value here is an approximation and shouldn’t be taken too seriously[^1].</p>
+<p>There are two main sections here, ‘Parametric coefficients’ and ‘Approximate significance of smooth terms’. The parametric section gives the standard summary for the non-smooth terms; in this case we only have the intercept. The next section describes our smooth term <code>s(log_lot_area)</code>. The first column, <code>edf</code>, is the effective degrees of freedom of the term, the trace of the smoother (or hat) matrix. When the degrees of freedom is 1, this is a linear term. So GAMs don’t try to force nonlinearity. If a term should be linear, <code>gam</code> will figure it out. If you’re unsure whether a variable should be included linearly in a model, <code>gam</code> can help you figure this out. Another nice thing about the degrees of freedom is 2 degrees of freedom corresponds to a quadratic, 3 to a cubic, etc. The next three columns provide information regarding a test of significance for the smooth term. The null is that the whole smooth term <code>s(log_lot_area)</code> is zero. The p-value here is an approximation and shouldn’t be taken too seriously.</p>
 </div>
 <div id="plotting-our-gam" class="section level3">
 <h3>Plotting Our GAM</h3>
-<p>Another way to assess whether a smooth term should be included is by examing a partial effects plot which we will look at now. We will start by using all the default arguments.</p>
+<p>Another way to assess whether a smooth term should be included is by examining a partial effects plot which we will look at now. We’ll start by using all the default arguments just to see what that looks like.</p>
 <pre class="r"><code>plot(log_log_lot_area)</code></pre>
 <p><img src="/post/2019-03-15-generalized-additive-models-part-2-mgcv_files/figure-html/plot-method-1.png" width="672" /></p>
-<p>This gives us a plot of the variable of interest vs. its smooth version. Also plotted is the smooth with <span class="math inline">\(\pm\)</span> 2 standard errors added on, essentially showing a 95% confidence interval. We can assess whether or not this term should be included using the rule-of-thumb: if we can draw a horizontal line through the confidence interval, it should not be included. In this case we can’t do that so we would want to keep this term. Let’s change a few of the plotting arguments to get a feel of what we can change.</p>
+<p>This gives us a plot of the variable of interest vs. its smooth version. Also plotted is the smooth with <span class="math inline">\(\pm\)</span> 2 standard errors added on, essentially showing a 95% confidence interval. We can assess whether or not this term should be included using the following rule-of-thumb: if we can draw a horizontal line through the confidence interval, it should <em>not</em> be included. In this case we can’t do that so we would want to keep this term. Let’s change a few of the plotting arguments to get a feel for what kind of control we have.</p>
 <pre class="r"><code>plot(log_log_lot_area,
      residuals = TRUE,
      rug = FALSE,
@@ -106,7 +101,7 @@ log_log_lot_area &lt;- gam(log_sale_price ~ s(log_lot_area),
      shift = coef(log_log_lot_area)[1],
      seWithMean = TRUE)</code></pre>
 <p><img src="/post/2019-03-15-generalized-additive-models-part-2-mgcv_files/figure-html/plot-method-extra-1.png" width="672" /></p>
-<p>This is a bit more complex than the first call to <code>plot</code> so let’s describe what each one of these arguments does. We’ll start with <code>shade</code> because that’s the most obvious: should we shade the confidence region? Similarly, <code>rug</code> specifies wheter or not a rug is added to the plot. I rarely use these and with the residuals added, I don’t really see a benfit to a rug as well. And that brings us to the <code>residuals</code> argument. These are actually partial residuals. The documentation describes them as:</p>
+<p>This is a bit more complex than the first call to <code>plot</code> so let’s describe what each one of these arguments does. We’ll start with <code>shade</code> because that’s the most obvious: should we shade the confidence region? Similarly, <code>rug</code> specifies whether or not a rug is added to the plot. I rarely use these and with the residuals added, I don’t really see a benefit to a rug as well. And that brings us to the <code>residuals</code> argument. These are actually partial residuals. The documentation describes them as:</p>
 <blockquote>
 <p>Partial residuals for a smooth term are the residuals that would be obtained by dropping the term concerned from the model, while leaving all other estimates fixed.</p>
 </blockquote>
@@ -114,8 +109,7 @@ log_log_lot_area &lt;- gam(log_sale_price ~ s(log_lot_area),
 </div>
 <div id="checking-our-gam" class="section level3">
 <h3>Checking Our GAM</h3>
-<p>We already saw how to assess if a smooth term should be included in our model via p-values and the ‘line test’. If we are satisfied with this and want to go further with diagnosing our model we can use the <code>gam.check</code> function. This function provides us with diagnostic information in the form of plots</p>
-<p>It provides us with diagnostic information in the form of pictures and numbers. The plots are of the residuals and the numbers tell us about convergence and the dimension of the basis for the smooth. Let’s see what this looks like for our model:</p>
+<p>We already saw how to assess if a smooth term should be included in our model via p-values and the ‘line test’. If we are satisfied with this and want to go further with diagnosing our model we can use the <code>gam.check</code> function. This function provides us with diagnostic information in the form of plots and summary numbers. The plots are of the residuals and the numbers tell us about convergence and the dimension of the basis for the smooth. Let’s see what this looks like for our model:</p>
 <pre class="r"><code>gam.check(log_log_lot_area)</code></pre>
 <p><img src="/post/2019-03-15-generalized-additive-models-part-2-mgcv_files/figure-html/gam-check-1.png" width="672" /></p>
 <pre><code>## 
@@ -137,5 +131,5 @@ log_log_lot_area &lt;- gam(log_sale_price ~ s(log_lot_area),
 </div>
 <div id="next-steps" class="section level3">
 <h3>Next Steps</h3>
-<p>Hopefully by now you have a basic understanding of how you might use a GAM with the <code>mgcv</code> package. In the next post we will dig a little deeper by seeing how to fit different types of GAM models. We will mix different types of terms and different types of smooths in order to illustrate the flexibiltiy GAMs.</p>
+<p>Hopefully by now you have a basic understanding of how you might use a GAM with the <code>mgcv</code> package. In the next post we will dig a little deeper by seeing how to fit different types of GAM models. We will mix different types of terms and different types of smooths in order to illustrate the flexibility GAMs.</p>
 </div>
