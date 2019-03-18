@@ -7,7 +7,10 @@ categories: []
 tags: []
 ---
 
-This is the first post in a mini series on generalized additive models or GAMs. Here we will cover a bit of background on GAMs. This will be a high level overview because many of the ideas from before carry over. In future post(s) we will see how we can use them with data.
+This is the first post in a mini series on generalized additive models or GAMs.
+In a sense, this is the culmination of what I have learned so far studying nonliear models. Everything I have done since my [first post](/2019/02/04/what-are-splines) on nonlinear models has been about splines and GAMs in `mgcv` are implemented with splines. I could have jumped straight in to GAMs but I didn't think it would be worthwhile before having a solid understanding of splines. I'm not 'done' with splines as I will be seeing how they can be applied to time series but this is basically the end of the first phase of my nonlinear models adventure.
+
+Here we will cover a bit of background on GAMs. This will be a high level overview because many of the ideas from before carry over. In future posts we will see how we can use them with data.
 
 
 ### What's with the Name
