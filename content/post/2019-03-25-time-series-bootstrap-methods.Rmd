@@ -8,27 +8,49 @@ tags: []
 draft: TRUE
 ---
 
-The bootstrap is a resampling method that, given an initial data set, generates an arbitrary number of additional (pseudo) data sets. The bootstrap attempts to mimic what we would see if we had replicated our data collection process a large number of times. The generated data sets are used to estimate the distribution of a statistic. Once we have a distribution we can do anything we like, usually a confidence or prediction interval. The idea is fairly simple. To generate a new data set we sample with replacement from the original data until we have a sample of the same size as the original data. But this simplicity comes with a downside. It's often not talked about
+The bootstrap is a resampling method that, given an initial data set, generates an arbitrary number of additional (pseudo) data sets. We mimic the process of repeated sampling from a population by treating the sample we have as though it were the population and sampling from that. The generated data sets can then be used to estimate the distribution of a statistic. Once we have a distribution, we can do anything we like, such as construct a confidence or prediction interval. The idea is fairly simple. To generate a new data set we sample with replacement from the original data until we have a sample of the same size as the original data. But this simplicity[^1] comes with a downside. It's not often talked about but the bootstrap has limitations. For example, it can only be used with i.i.d. data, which brings us to the subject at hand. In this post we are going to look at why the bootstrap doesn't work for time series data and what we can do about it.
+
+
+### The Problem With Time Series
+
+The classical bootstrap doesn't apply to time series for the same reasons that other i.i.d methods don't apply. Time series data has an inherit order to it that i.i.d methods don't account for. We can't just mix up the data willy nilly as we do in the bootstrap because that would remove the structure. We need to preserve the order. We need to make sure adjacent observations stay adjacent. And we also want our samples to be random. These two requirements might seem a bit at odds with each other. On one hand we want our data to be random thus jumbled up. On the other hand we don't want the data jumbled up because we need to keep it in order. How can we keep things in order and mix them up at the same time? We make a compromise. We break the data into a series of consecutive blocks containing a set number of observations, in order, and use a bootstrap on the blocks.
+
+### The Block Bootstrap
+
+The block bootstrap (BB) was the original extension of the i.i.d bootstrap to time series. The idea is best illustrated with an example. Suppose we have the series
+
+\[
+X_1, X_2, X_3, X_4, X_5, X_6, X_7, X_8, X_9, X_{10}.
+\]
+The first thing we do is split this up into blocks. To do this we need to figure out how many observations to put in each group. For now, let's just say we will use two. Then our blocked data would look like
+\[
+\overbrace{X_1, X_2}^{block 1} , \quad \overbrace{X_3, X_4}^{block 2}, \quad \overbrace{X_5, X_6}^{block 3}, \quad \overbrace{X_7, X_8}^{block 4}, \quad \overbrace{X_9, X_{10}}^{block 5}.
+\]
+Now is where the bootstrap idea comes in. We take a randomly sample the *blocks* with replacement. A bootstrapped series of blocks might be
+\[\
+\text{block 3}, \quad \text{block 1}, \quad \text{block 5}, \quad \text{block 2}, \quad \text{block 5}.
+\]
+or, in terms of the original series
+\[
+X_5, X_6, \quad X_1, X_2, \quad X_9, X_{10}, \quad X_3, X_4, \quad X_9, X_{10}.
+\]
+Hopefully this illustrates how we can have randomness in our generated series while still preserving the order.
+
+
+### The Moving Block Bootstrap
+
+An extension of the block bootstrap is the moving blocks bootstrap (MBB) where the series is split into overlapping blocks. In the example above, the first block started at the $X_1$ and, since our block length was two, the second block started at $X_3$. Each block started at every other observation. In the moving blocks bootstrap, we also consider blocks that start at *every* observation. I tried to type this out as above but it's tricky to get overalapping braces and my $\LaTeX$ skills are rusty since I moved to R Markdown. Anyways, we would have the same blocks as above and additional blocks starting at $X_2$, $X_4$, $X_6$, and $X_8$. Basically, the block starting points *move* along the series. 
+
+Once the blocks are defined we can then take a bootstrap sample of the blocks as before. But note that since there are more blocks in the case of the MBB, we pick as many as necessary to get a series of the same length as the original.
+
+
+### The Stationary Bootstrap
+
+note that their are other methods: AR sieve, methods based on markov processes, methods based on filtering to get iid then bootstrap that, lpb, etc.
 
 
 
-Because of its power and simplicity, many people learn about the bootstrap early on in their statistics/data science journey. But then
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+[^1]: As in simple to implement in practice. The theory is far from simple.
 
 
