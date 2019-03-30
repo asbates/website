@@ -13,11 +13,11 @@ The bootstrap is a resampling method that, given an initial data set, generates 
 
 ### The Problem With Time Series
 
-The classical bootstrap doesn't apply to time series for the same reasons that other i.i.d methods don't apply. Time series data has an inherit order to it that i.i.d methods don't account for. We can't just mix up the data willy nilly as we do in the bootstrap because that would remove the structure. We need to preserve the order. We need to make sure adjacent observations stay adjacent. And we also want our samples to be random. These two requirements might seem a bit at odds with each other. On one hand we want our data to be random thus jumbled up. On the other hand we don't want the data jumbled up because we need to keep it in order. How can we keep things in order and mix them up at the same time? We make a compromise. We break the data into a series of consecutive blocks containing a set number of observations, in order, and use a bootstrap on the blocks.
+The classical bootstrap doesn't apply to time series for the same reasons that other i.i.d methods don't apply. Time series data has an inherit order to it that i.i.d methods don't account for. Each data point in a time series depends on previous data points. So if we want to apply any sort of resampling scheme to time series data we need a way to incorporate dependency. We can't just mix up the data willy nilly as we do in the classical bootstrap because that would destroy the structure. We need to preserve the order. And we also want our samples to be random. These two requirements might seem a bit at odds with each other. On one hand we want our data to be random thus jumbled up. On the other hand we don't want the data jumbled up because we need to keep it in order. How can we keep things in order and mix them up at the same time? We make a compromise. We break the data into a series of consecutive blocks each containing a few observations, in order, and use a bootstrap on the blocks.
 
 ### The Block Bootstrap
 
-The block bootstrap (BB) was the original extension of the i.i.d bootstrap to time series. The idea is best illustrated with an example. Suppose we have the series
+The block bootstrap (BB) was one of the earliest extensions of the i.i.d bootstrap to time series. The idea is best illustrated with an example. Suppose we have the series
 
 \[
 X_1, X_2, X_3, X_4, X_5, X_6, X_7, X_8, X_9, X_{10}.
@@ -26,31 +26,77 @@ The first thing we do is split this up into blocks. To do this we need to figure
 \[
 \overbrace{X_1, X_2}^{block 1} , \quad \overbrace{X_3, X_4}^{block 2}, \quad \overbrace{X_5, X_6}^{block 3}, \quad \overbrace{X_7, X_8}^{block 4}, \quad \overbrace{X_9, X_{10}}^{block 5}.
 \]
-Now is where the bootstrap idea comes in. We take a randomly sample the *blocks* with replacement. A bootstrapped series of blocks might be
+With our blocks defined, we can now apply the boostrap. We take a random sample of the *blocks* with replacement. A bootstrapped series of blocks might be
 \[\
-\text{block 3}, \quad \text{block 1}, \quad \text{block 5}, \quad \text{block 2}, \quad \text{block 5}.
+\text{block 3}, \quad \text{block 1}, \quad \text{block 5}, \quad \text{block 2}, \quad \text{block 5}
 \]
-or, in terms of the original series
+or, in terms of the original series,
 \[
 X_5, X_6, \quad X_1, X_2, \quad X_9, X_{10}, \quad X_3, X_4, \quad X_9, X_{10}.
 \]
-Hopefully this illustrates how we can have randomness in our generated series while still preserving the order.
+This is the basic idea of a time series bootstrap. Break the series into consecutive blocks and then resample the blocks. This has the effect of giving us a new series with the same dependence structure. Well, the same short-term dependence structure.
 
 
 ### The Moving Block Bootstrap
 
-An extension of the block bootstrap is the moving blocks bootstrap (MBB) where the series is split into overlapping blocks. In the example above, the first block started at the $X_1$ and, since our block length was two, the second block started at $X_3$. Each block started at every other observation. In the moving blocks bootstrap, we also consider blocks that start at *every* observation. I tried to type this out as above but it's tricky to get overalapping braces and my $\LaTeX$ skills are rusty since I moved to R Markdown. Anyways, we would have the same blocks as above and additional blocks starting at $X_2$, $X_4$, $X_6$, and $X_8$. Basically, the block starting points *move* along the series. 
-
-Once the blocks are defined we can then take a bootstrap sample of the blocks as before. But note that since there are more blocks in the case of the MBB, we pick as many as necessary to get a series of the same length as the original.
+An extension of the block bootstrap is the moving block bootstrap (MBB) where the series is split into *overlapping* blocks. Let's see how this would apply to the series above. In the BB, the first block started at the $X_1$ and, since our block length was two, the second block started at $X_3$. Each block started at every other observation. In the moving block bootstrap however, we also consider blocks that start at *every* observation[^2]. We would have the same blocks as above but with additional blocks starting at $X_2$, $X_4$, $X_6$, and $X_8$. Basically, the block starting points *move* along the series. The blocks would therefore look like this:
+\[
+\text{block 1}: X_1, X_2 \\
+\text{block 2}: X_2, X_3 \\
+\text{block 3}: X_3, X_4 \\
+\text{block 4}: X_4, X_5 \\
+\vdots \\
+\text{block 9}: X_9, X_{10}.
+\]
+Once the blocks are defined we can then take a bootstrap sample of the blocks as before.
 
 
 ### The Stationary Bootstrap
 
-note that their are other methods: AR sieve, methods based on markov processes, methods based on filtering to get iid then bootstrap that, lpb, etc.
+The stationary bootstrap is another variant of the block bootstrap with a different sort of randomness. Unlike the block bootstrap and moving block bootstrap, which use a fixed block length, the stationary bootstrap uses a random block length. The shuffling in the stationary bootstrap comes from creating blocks where each block has a random length. An additional source of randomness comes from selecting starting points for the blocks. This is similar to randomly selecting blocks in the MBB because every data point in the series is the start of a block in MBB. 
+
+Describing the stationary bootstrap method requires a bit more setup than before. We start with some data $X_1, X_2, \ldots, X_n$. Now, let's write down what the blocks might look like by letting $B_{i,b} = \{X_i, X_{i+1}, \ldots, X_{i+b-1}\}$. That is, block $i$ starts at observation $i$ and has length $b$. Note that we aren't specifying that $b$ is a fixed length. We are just trying to describe what a block looks like generally. Next we need a sequence of i.i.d. random variables $L_1, L_2, \ldots$ that come from a geometric distribution. More specifically $P(L_i = m) = (1-p)^{m-1} \cdot p$. These will be our block lengths. Now we need to specify where the blocks will start. To do this let $S_1, S_2, \ldots$ be i.i.d from the discrete uniform distribution on $(1, 2, \ldots, n)$, the indices of the original data. We now have everything we need to describe a bootstrap realization of the series:
+\[ (X_1^*, X_2^*, \ldots, X_n^*) = (B_{S_1, L_1}, B_{S_2, L_2}, B_{S_3, L_3}, \ldots). \]
+For a given block, the $S_i$s specify where the start of the block will be and the $L_i$s specify how long that block will be. We use these to generate the first block $B_{S_1, L_1}$, the second block $B_{S_2, L_2}$, and so on until we have a bootstrap series of length $n$.
+
+If this is still a bit unclear, the people who came up with the stationary bootstrap provide a different explanation of the method which I will attempt to describe here. The first observation in the bootstrap sample, $X_1^*$ is picked at random from the original series. The next observation of the original series will be $X_2^*$, the next observation in the bootstrap series, with probability $1-p$. Alternatively, $X_2^*$ will be randomly selected from the original series with probability $p$.
+
+
+### A Few Notes
+
+Let's look at a few other aspects of these techniques and how they relate to each other. Obviously they are all based on the idea of constructing blocks so that the order of the time series can be preserved. The BB and MBB are based on creating blocks of fixed size. That means if you are going to actually implement these methods, you have to choose a block length. Unfortunately, there isn't a block length that works in all cases. You don't want it too small because then you aren't capturing the dependence. Too large and you are capturing noise with the dependence. The choice really should be based on the data you have. The natural thing to do is to look at the ACF of the series and pick a reasonable value based on that. Actually, it's not entirely true that there isn't a good way to choose the block length. Politis and White give a method for estimating the optimal block size in [Automatic block-length selection for the dependent bootstrap](http://www.math.ucsd.edu/~politis/SBblock-revER.pdf)[^3]. We won't go into it here but it's based on the ACF.
+
+The stationary bootstrap doesn't require you to specify a block length but it does require you to specify a value for $p$. Again, there is no best choice here. But you can follow a similar approach as in the BB and MBB. The block lengths follow a geometric distribution with mean $1/p$. We can again use the ACF of the series, pick a value, and derive $p$ from that. But in this case we are selecting the *mean* block length. I haven't tested it out but apparently the choice of $p$ in the stationary bootstrap is less sensitive than the choice of block size in the BB and MBB.
+
+While we're on the subject of the stationary bootstrap, why is it called the *stationary* bootstrap? Because if your series is stationary, then the bootstrap series will be stationary as well. This is something that the BB and MBB don't offer; their bootstrapped series are nonstationary.
+
+Another question you may have is what happens at the end of the series. For example, let's say we have a series of length 100 and we are using a block length of 5. What happens with $X_{97}, X_{98}, X_{99}, X_{100}$? If in the MBB can we have a block starting at $X_{97}$? This does pose a bit of a problem. One way around this is to wrap the series around to the beginning. For example we might have a block like $X_{99}, X_{100}, X_{1}, X_{2}$. This is the idea behind the circular block bootstrap. The stationary bootstrap applies this approach when we need to include the 'next' observation in the orignal series but we're actually at the end of the series.
+
+
+Learning about these methods is all well and great but how can we actually implement them? In R the `tsboot` function does time series bootstrapping. It's the time series analog of the `boot` function. However, the documentation isn't clear on whether the BB or MBB is used when the block length is fixed.
+
+not sure about python...
+
+How can we implement this? `tsboot`. if your're tidyverse inclined hopefully rsample
+
+
+### Other Time Series Bootstrap Methods
+
+What we looked at here are the 'core' time series bootstrap methods. There are actually quite a lot of different methods that have been developed. For example the AR sieve, the linear process bootstrap (a recent development), frequency domain methods, etc.
+
+
+### References
+
+To my knowlege, the block bootstrap and moving block bootstrap were introduced by K&uuml;nsch in "The Jacknife and the Bootstrap for General Stationary Observations" and Liu and Singh in "Moving Blocks Jacknife and Bootstrap Capture Weak Dependence". I haven't read these papers though. This guess is based on references to them in the the Politis and Romano paper "The Stationary Bootstrap" where, as you might have guessed, they introduce the stationary bootstrap. If you're interested in learning more about bootstrap time series I suggest looking at some of Politis's papers. I'm not a researcher so I don't know what else is out there but that should be a good place to start. 
+
+
+
+
+
 
 
 
 
 [^1]: As in simple to implement in practice. The theory is far from simple.
-
-
+[^2]: I tried to type this out as above but it's tricky to get overalapping braces and my $\LaTeX$ skills are rusty.
+[^3]: There's also [a correction](http://www.math.ucsd.edu/~politis/PAPER/SBblockCORRECTION.pdf) but it's not a correction to the block length selection procedure.
