@@ -1,0 +1,18 @@
+---
+title: Time Series with Spline Based Models
+author: ''
+date: '2019-04-19'
+slug: time-series-with-spline-based-models
+categories: []
+tags: []
+draft: true
+---
+
+
+
+<p>In this post we are going to see how to use three spline based methods: <em>thin plate splines</em>, <em>multivariate adaptive regression splines</em>, and <em>generalized additive models</em> to model time series data. Moreover, we will look at three different ways of using each model. Since these are not time series models per se, we have some flexibility it terms of how we actually fit the models to our data.</p>
+<div id="the-data" class="section level3">
+<h3>The Data</h3>
+<p>The data we will be using comes from the <a href="https://www.cdc.gov/flu/weekly/index.htm">CDC FluView</a> which is a CDC website that has information on influenza in the United States. They also have <a href="https://www.cdc.gov/flu/weekly/fluviewinteractive.htm">FluView Interactive</a>, a web application that allows you to interact with flu related data as well as download data.</p>
+<p>We will be focusing on the weekly number of influenza-like illnesses (ILI) reported in California from 2010 to 2019 by members of the US Outpatient Influenza-like Illness Surveillance Network (ILINet). You can download the data from the FluView Interactive website. However, I recommend using the <code>cdcfluview</code> R package which you can find on <a href="https://cran.r-project.org/web/packages/cdcfluview/index.html">CRAN</a> or <a href="https://github.com/hrbrmstr/cdcfluview">GitHub</a>.</p>
+</div>
