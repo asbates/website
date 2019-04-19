@@ -1,6 +1,5 @@
 ---
 title: "About"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
 

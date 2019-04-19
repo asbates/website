@@ -1,6 +1,5 @@
 ---
 title: Projects
-date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
 These are some of my previous/current projects. Some of the current projects I am working on more actively. Others are more of a side project that I try to play around with when I can but are usually on the back burner.
