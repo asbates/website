@@ -5,14 +5,182 @@ date: '2019-04-19'
 slug: time-series-with-spline-based-models
 categories: []
 tags: []
-draft: true
 ---
 
 
 
-<p>In this post we are going to see how to use three spline based methods: <em>thin plate splines</em>, <em>multivariate adaptive regression splines</em>, and <em>generalized additive models</em> to model time series data. Moreover, we will look at three different ways of using each model. Since these are not time series models per se, we have some flexibility it terms of how we actually fit the models to our data.</p>
+<p>In this post we are going to explore using three spline based models - <em>thin plate splines</em>, <em>multivariate adaptive regression splines</em>, and <em>generalized additive models</em> - for modeling time series data. In particular, we will be modeling for the purpose of forecasting. Since these are not time series models per se we will also look at three different methods to fit them to our data.</p>
 <div id="the-data" class="section level3">
 <h3>The Data</h3>
 <p>The data we will be using comes from the <a href="https://www.cdc.gov/flu/weekly/index.htm">CDC FluView</a> which is a CDC website that has information on influenza in the United States. They also have <a href="https://www.cdc.gov/flu/weekly/fluviewinteractive.htm">FluView Interactive</a>, a web application that allows you to interact with flu related data as well as download data.</p>
-<p>We will be focusing on the weekly number of influenza-like illnesses (ILI) reported in California from 2010 to 2019 by members of the US Outpatient Influenza-like Illness Surveillance Network (ILINet). You can download the data from the FluView Interactive website. However, I recommend using the <code>cdcfluview</code> R package which you can find on <a href="https://cran.r-project.org/web/packages/cdcfluview/index.html">CRAN</a> or <a href="https://github.com/hrbrmstr/cdcfluview">GitHub</a>.</p>
+<p>We will be focusing on the weekly number of influenza-like illnesses (ILI) reported in California from October 2010 to March 2019. The ILI reports come from members of the US Outpatient Influenza-like Illness Surveillance Network, or ILINet. You can download the data from the FluView Interactive website. However, I recommend using the <code>cdcfluview</code> R package which you can find on <a href="https://cran.r-project.org/web/packages/cdcfluview/index.html">CRAN</a> or <a href="https://github.com/hrbrmstr/cdcfluview">GitHub</a>. The specific data set we will use here is a simplified version and can be found <a href="https://github.com/asbates/nonlinear-models/blob/master/data/ilinet-calif-up-to-2019-03-31.csv">here</a>.</p>
+<p>Let’s load the packages we will need and take a quick look at the data. We also add a time index <code>t</code> which we will use later.</p>
+<pre class="r"><code>library(tidyverse)
+library(fields)
+library(earth)
+library(mgcv)
+library(forecast)
+
+theme_set(theme_bw())
+
+flu &lt;- read_csv(&quot;https://raw.githubusercontent.com/asbates/nonlinear-models/master/data/ilinet-calif-up-to-2019-03-31.csv&quot;) %&gt;% 
+  mutate(t = 1:nrow(.))
+
+flu</code></pre>
+<pre><code>## # A tibble: 444 x 8
+##    week_start  year  week unweighted_ili ilitotal num_of_providers
+##    &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;          &lt;dbl&gt;    &lt;dbl&gt;            &lt;dbl&gt;
+##  1 2010-10-03  2010    40           1.95      632              112
+##  2 2010-10-10  2010    41           2.15      742              122
+##  3 2010-10-17  2010    42           2.24      766              126
+##  4 2010-10-24  2010    43           1.92      666              130
+##  5 2010-10-31  2010    44           2.52      887              131
+##  6 2010-11-07  2010    45           2.75      906              126
+##  7 2010-11-14  2010    46           2.82     1020              131
+##  8 2010-11-21  2010    47           3.16      729              134
+##  9 2010-11-28  2010    48           2.61      939              135
+## 10 2010-12-05  2010    49           3.06     1072              135
+## # … with 434 more rows, and 2 more variables: total_patients &lt;dbl&gt;,
+## #   t &lt;int&gt;</code></pre>
+<p>The data starts at week 40 of 2010 which is October 03. The column of interest for us is <code>ilitotal</code> which is the total number of reported patients with flu-like illnesses. Let’s look at a time plot of the series.</p>
+<pre class="r"><code>flu %&gt;% 
+  ggplot(aes(week_start, ilitotal)) +
+  geom_line()</code></pre>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/initial-time-plot-1.png" width="672" /></p>
+<p>Unsurprisingly there is some obvious seasonality with more reported cases in the winter months.</p>
+</div>
+<div id="first-approach" class="section level3">
+<h3>First Approach</h3>
+<p>For our first approach at modeling we will use time indexed as <span class="math inline">\(t = 1, 2, 3, ..., n\)</span>. This is the simplest approach and is the default behavior of the <code>ts</code> class in R. Before we start modeling though, we will do setup. First we will use 2019 data as a holdout set. The last observation in this data is for the week of March 31 so this gives us 3 months for testing (13 weeks). We will also use an ARIMA for comparison so we will create a <code>ts</code> version of the data. Lastly, the <code>Tps</code> function we will use for the thin plate spline takes an <span class="math inline">\(x/y\)</span> pair instead of a formula and data frame so we will need to create those as well.</p>
+<pre class="r"><code>flu_train &lt;- filter(flu, week_start &lt; &quot;2019-01-01&quot;)
+flu_test &lt;- filter(flu, week_start &gt;= &quot;2019-01-01&quot;)
+
+flu_ts &lt;- ts(flu$ilitotal, frequency = 52)
+flu_ts_train &lt;- flu_ts[1:nrow(flu_train)]
+flu_ts_test &lt;- flu_ts[(nrow(flu_train) + 1):nrow(flu)]
+
+# Tps requires x/y
+x_train &lt;- flu_train %&gt;%
+  select(t)
+
+y_train &lt;- flu_train %&gt;% 
+  select(ilitotal)
+
+x_test &lt;- flu_test %&gt;% 
+  select(t)
+
+y_test &lt;- flu_test %&gt;% 
+  select(ilitotal)</code></pre>
+<p>Now we are ready to go with model fitting.</p>
+<pre class="r"><code># ARIMA
+arima_mod &lt;- auto.arima(flu_ts_train)
+
+# thin plate spline
+tps_mod &lt;- Tps(x_train, y_train)
+
+# MARS
+mars_mod &lt;- earth(ilitotal ~ t, data = flu_train)
+
+# GAM
+gam_mod &lt;- gam(ilitotal ~ s(t), data = flu_train, method = &quot;REML&quot;)</code></pre>
+<p>If this was a ‘real’ analysis we would of course want to investigate the fit of these models by looking at the estimated parameters, residuals, etc. But for our purposes we will just be considering the forecasts to keep things simple. First let’s see how well each of the models fits the training data.</p>
+<pre class="r"><code>flu_train &lt;- flu_train %&gt;% 
+  mutate(
+    fitted_arima = fitted(arima_mod),
+    fitted_tps = fitted(tps_mod)[,1],
+    fitted_mars = predict(mars_mod)[,1],
+    fitted_gam = fitted(gam_mod)
+  )
+
+
+flu_train %&gt;% 
+  select(week_start, ilitotal, starts_with(&quot;fitted&quot;)) %&gt;% 
+  gather(&quot;model&quot;, &quot;value&quot;, -week_start, -ilitotal) %&gt;% 
+  mutate(model = str_remove(model, &quot;fitted_&quot;)) %&gt;% 
+  ggplot(aes(week_start, ilitotal)) +
+  geom_line() +
+  geom_line(aes(y = value, color = model))</code></pre>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/fa-fitted-1.png" width="672" /></p>
+<p>The MARS and GAM are obviously doing poorly. This is likely due to the way we specified the time index because, as we will see shortly, they look much better using other approaches. The ARIMA and thin plate spline are doing the best so let’s see how well they do on the test set.</p>
+<pre class="r"><code>flu_test &lt;- flu_test %&gt;% 
+  mutate(
+    pred_arima = forecast(arima_mod, h = 13)$mean[1:13],
+    pred_tps = predict(tps_mod, x_test)[,1]
+  )
+
+flu_test %&gt;% 
+  select(week_start, ilitotal, starts_with(&quot;pred&quot;)) %&gt;% 
+  gather(&quot;model&quot;, &quot;forecast&quot;, -week_start, -ilitotal) %&gt;% 
+  mutate(model = str_remove(model, &quot;pred_&quot;)) %&gt;% 
+  ggplot(aes(week_start, ilitotal)) +
+  geom_line() +
+  geom_line(aes(y = forecast, color = model))</code></pre>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/fa-forecast-1.png" width="672" /></p>
+<p>These don’t look so great. We can plot the original data along with these forecasts to get a better sense of just how far off they are.</p>
+<pre class="r"><code>flu %&gt;%
+  ggplot(aes(week_start, ilitotal)) +
+  geom_line() +
+  geom_line(aes(week_start, pred_arima, color = &quot;blue&quot;), data = flu_test) +
+  geom_line(aes(week_start, pred_tps, color = &quot;red&quot;), data = flu_test) +
+  scale_color_discrete(name = &quot;model&quot;, labels = c(&quot;arima&quot;, &quot;tps&quot;))</code></pre>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/fa-forecast-full-series-1.png" width="672" /></p>
+<p>Yes, terrible.</p>
+</div>
+<div id="second-approach" class="section level3">
+<h3>Second Approach</h3>
+<p>Now we will see how things change when we use the year and week as the time index instead of <span class="math inline">\(1, 2, ..., n\)</span>. This makes more sense for this data because the number of flu-like illnesses in say weeks 3 and 50 will be a lot different than in week 20. The code is almost the same as before so I won’t show most of it. If you’re interested you can find it <a href="https://github.com/asbates/nonlinear-models/blob/master/flu/spline-based.R">here</a>. The only real difference is the model specification.</p>
+<pre class="r"><code>tps_mod &lt;- Tps(x_train, y_train)
+mars_mod &lt;- earth(ilitotal ~ year + week, data = flu_train)
+gam_mod &lt;- gam(ilitotal ~ s(year) + s(week), data = flu_train, method = &quot;REML&quot;)</code></pre>
+<p>This time <code>x_train</code> has two columns, year and week, and we use a separate smooth for year and week in the GAM<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. We don’t use the ARIMA model here because it won’t change and we already saw how poor the forecasts were.</p>
+<p>Let’s see how the models fare using this approach by first looking at the fitted values.</p>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/sa-fitted-1.png" width="672" /></p>
+<p>The MARS and GAM models do much better here although still not quite as good as the thin plate spline. Let’s see how each of their forecasts do.</p>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/sa-forecast-full-series-1.png" width="672" /></p>
+<p>The thin plate spline is much better this time around. The MARS and GAM are still lacking.</p>
+</div>
+<div id="third-approach" class="section level3">
+<h3>Third Approach</h3>
+<p>This time we will use lagged values of the series as predictors instead of time. We will use four lags. For the GAM we use a separate smooth for each lag and no interactions between them.</p>
+<pre class="r"><code>flu &lt;- flu %&gt;% 
+  mutate(
+    lag_ilitotal = lag(ilitotal),
+    lag2_ilitotal = lag(ilitotal, n = 2L),
+    lag3_ilitotal = lag(ilitotal, n = 3L),
+    lag4_ilitotal = lag(ilitotal, n = 4L)
+  )</code></pre>
+<p>Again, let’s see how well the models fit the training set.</p>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/ta-fitted-1.png" width="672" /></p>
+<p>Clearly the MARS and GAM are having a much easier time now. Actually all of the models seem to be doing quite well. It’s a bit hard to see the original series in black. But the real test is the forecasts…</p>
+<p><img src="/post/2019-04-19-time-series-with-spline-based-models_files/figure-html/ta-forecasts-full-series-1.png" width="672" /></p>
+<p>The MARS and GAM really come into their own now. Their forecasts actually look better than the thin plate spline which has a large spike above the actual data. It’s hard to tell a difference between the MARS and GAM visually so let’s look at a numeric summary of their fit.</p>
+<pre class="r"><code>yardstick::metrics(flu_test, truth = ilitotal, estimate = pred_gam)</code></pre>
+<pre><code>## # A tibble: 3 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 rmse    standard     220.   
+## 2 rsq     standard       0.259
+## 3 mae     standard     171.</code></pre>
+<pre class="r"><code>yardstick::metrics(flu_test, truth = ilitotal, estimate = pred_mars)</code></pre>
+<pre><code>## # A tibble: 3 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 rmse    standard     201.   
+## 2 rsq     standard       0.306
+## 3 mae     standard     153.</code></pre>
+<p>Based on this I would go with the MARS model if I had to pick one.</p>
+</div>
+<div id="next-steps" class="section level3">
+<h3>Next Steps</h3>
+<p>Let’s take a minute to talk about other things we might do if we wanted to take this further. Like I mentioned before we should probably look at model diagnostics to help decide on which model we would want to use. Another thing we could do is a time series cross validation. This is where we slide along the series using only a portion of the data at a time. For example we could use the first two months for training and the third month to test our forecasts. Then months two and three become the training data, month four the testing data, and so on. This would give us a better indication of how well our model would hold up over time. Maybe we just got lucky by only looking at the last month of the series. We would also want to compute forecast intervals. The MARS model is giving better point forecasts but maybe the GAM gives us better forecast intervals in which case we would go with the GAM. Note that this would probably require a time series bootstrap because I don’t think there is any way to get forecast intervals for MARS or GAM models.</p>
+</div>
+<div id="the-end" class="section level3">
+<h3>The End</h3>
+<p>Hopefully this gives you a feel for how to model time series with models that aren’t time series models per se. I was fairly unsure how to apply the models I’ve learned so far in my course to time series so I learned a lot in developing this post.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>This may not be the best way to specify the GAM. We will investigate that in another post.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+</ol>
 </div>
