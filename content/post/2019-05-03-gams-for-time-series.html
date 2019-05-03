@@ -1,0 +1,105 @@
+---
+title: GAMs for Time Series
+author: ''
+date: '2019-05-03'
+slug: gams-for-time-series
+categories: []
+tags: []
+draft: true
+---
+
+
+
+<p>In the <a href="/2019-04-19/time-series-with-spline-based-models">previous post</a> we looked at modeling time series using models based on splines. I’d like to extend that investigation by taking a deeper dive into using GAMs for time series.</p>
+<div id="last-time" class="section level3">
+<h3>Last Time</h3>
+<p>Last time we used a GAM to model the number of flu-like illnesses reported to the CDC using three different approaches. We started by using time as a predictor variable of the form <span class="math inline">\(t = 1,2,3, ...\)</span>. This did not go well. The second approach we used had smooth functions of year and week as predictors. This gave a reasonable fit to the data but the forecasts were terrible. Lastly, we used four weeks worth of lags as predictors and this gave us a good fit to the data as well as excellent forecasts.</p>
+<p>I have to admit that going into the that post I was pretty lost as to how we could actually extend GAMs to time series. Time series models explicitly account for time and autocorrelation. However, GAMs are generic models so we need to specify how to account for this ourselves. We need to tell the model not just what are predictors are but how we want them to be handled.</p>
+</div>
+<div id="this-time" class="section level3">
+<h3>This Time</h3>
+<p>In this post we are going to investigate the different ways in which we can model time series with GAMs. We will look at how we might want to use time as predictors, including functions of time in various ways by using different smoothing bases, and how to account for autocorrelation. We will stick with the flu-like illness data because it proven itself to be a bit finicky.</p>
+</div>
+<div id="resources" class="section level3">
+<h3>Resources</h3>
+<p>Before we start I’d like to point out a few resources because if not for them I would still be a bit lost. The first is Noam Ross’s <a href="https://github.com/noamross/gam-resources">gam-resources</a> GAM resources GitHub repository. This is just what it sounds like, a list of resources for learning about GAMs. Of particular interest to me were the slides and video for his talk outlining what GAMs and the <code>mgcv</code> package are capable of. One section of this talk is dedicated to time series which really got the ball rolling for me. The second resource I found really helpful is Gavin Simpson’s <a href="https://www.fromthebottomoftheheap.net/2014/05/09/modelling-seasonal-data-with-gam/">blog post</a> showing how to use GAMs to model seasonal time series. This was quite convenient because the data at hand is seasonal.</p>
+</div>
+<div id="a-baseline-model" class="section level3">
+<h3>A Baseline Model</h3>
+<p>We are going to start with a model we used last time as a baseline. As a reminder, the data is the weekly number of flu-like illnesses reported to the CDC from October 2010 to March 2019 and was obtained with the <a href="https://github.com/hrbrmstr/cdcfluview">cdcfluview</a> package. It looks like this:</p>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/full-flu-plot-1.png" width="672" /></p>
+<p>We will hold out 2019 data (13 weeks worth) for testing. The baseline model will use smooth functions of year and week as inputs.</p>
+<pre class="r"><code>old_model &lt;- gam(ilitotal ~ s(year) + s(week), data = flu_train)</code></pre>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/old-mod-plot-1.png" width="672" /></p>
+<p>The model is overestimating the peak in the 2012 season and underestimating the peak of the other seasons. Also note how it drops down at the end. If we make forecasts with this model, this drop off will continue but the actual series increases. So this model isn’t very good and our goal to improve upon it.</p>
+</div>
+<div id="different-basis-functions" class="section level3">
+<h3>Different Basis Functions</h3>
+<p>To improve upon the baseline model one thing we could do is use different basis functions for the smooths. In Gavin Simpson’s post he suggests models of the form
+<span class="math display">\[
+y = f_{trend}(x_1) + f_{seasonal}(x_2)
+\]</span>
+where we have a smooth to account for the trend component of the series and another smooth to account for the seasonal component. Since the flu data is weekly, we will be using week for our seasonal component. For the trend component we have a couple of options. We could use 1, 2, 3, … as we did before, or as Gavin suggests the data converted to a numeric value. The point is that the variable used for the trend component should capture the high level order of the series. The week does represent order but only <em>within</em> years. Let’s go ahead and use the data converted to a numeric value. In R, this gives us the time in days since Jan 1, 1970.</p>
+<p>In Gavin’s post he uses the default thin plate spline for the trend variable. However, Noam’s slides suggest considering a Gaussian process smooth. We will try both of these methods.</p>
+<p>To model the seasonality of the data we will use what is called a cyclic cubic spline basis. This is like a cubic spline but restricted so that the values at each end of the spline are the same. This should give us continuity between seasons as the end of one seasonal period will match up with the start of the next seasonal period.</p>
+<p>Let’s go ahead and fit two models. Both will use a numeric version of time for the trend but one will use a thin plate spline and the other will use a Gaussian process smooth. For the seasonal component we will use a cyclic smooth and additionally specify that we want a basis dimension of 52 which is approximately the number of weeks in a year.</p>
+<pre class="r"><code>flu_train &lt;- flu_train %&gt;% 
+  mutate(time = as.numeric(week_start))
+
+flu_test &lt;- flu_test %&gt;% 
+  mutate(time = as.numeric(week_start))
+
+tp_cc &lt;- gam(ilitotal ~ s(time) + s(week, bs = &quot;cc&quot;, k = 52),
+             data = flu_train)
+gp_cc &lt;- gam(ilitotal ~ s(time, bs = &quot;gp&quot;) + s(week, bs = &quot;cc&quot;, k = 52),
+             data = flu_train)</code></pre>
+<p>We can see how they are doing compared to our baseline by looking at the fitted values,</p>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/no-corr-fitted-1.png" width="672" /></p>
+<p>and by looking at the forecasts,</p>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/no-corr-fcast-1.png" width="672" /></p>
+<p>which aren’t very good. One problem might be that we have some residual autocorrelation because we aren’t explicitly accounting for it.</p>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/no-corr-acf-1.png" width="672" /></p>
+<p>It appears that is the problem. So let’s try to fix it.</p>
+</div>
+<div id="aside---the-gratia-package" class="section level3">
+<h3>Aside - The gratia Package</h3>
+<p>But before that I want to briefly mention the <a href="https://github.com/gavinsimpson/gratia">gratia</a> package. <code>gratia</code> is a package by Gavin Simpson that provides <code>ggplot2</code> based graphics for <code>mgcv</code> objects along with some other helper functions. It’s still a work in progress so not all <code>mgcv</code> model types are supported yet. As an example, we will look at the smooths for the model with the Gaussian process trend smooth.</p>
+<pre class="r"><code>draw(gp_cc)</code></pre>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/gp-cc-smooths-1.png" width="672" /></p>
+<p>We are using <code>s(time)</code> as our trend component and it seems to be capturing those changes maybe with a bit too much wiggliness. If we look at the original series (above), we see that the peak part of each season rises and falls through the years. The <code>s(week)</code> smooth makes sense as well because it’s high in the early weeks, drops in the summer weeks, and rises again as winter sets in. Also note that the ends of the smooth align because we are using a cyclic cubic spline basis.</p>
+</div>
+<div id="accounting-for-autocorrelation" class="section level3">
+<h3>Accounting for autocorrelation</h3>
+<p>The models so far are not so great. Our suspicion is that this is because we aren’t incorporating autocorrelation which is confirmed by the residual plots. We can try to fix that by using the <code>gamm</code> function. The extra ‘m’ is for ‘mixed’ as in a generalized additive mixed model where the mixed model part is used on the residuals. This allows us to specify a correlation structure for the residuals which is exactly what we want.</p>
+<p>To keep things from getting too complicated we will stick to the default thin plate spline basis for the trend component. From the ACF and PACF plots, it looks like we should be using AR terms, possibly up to order 4. We specify this in the <code>correlation</code> argument of <code>gamm</code>. First we fit a model as above, without correlated errors so that we can compare models</p>
+<pre class="r"><code>ar0 &lt;- gamm(ilitotal ~ s(time) + s(week, bs = &quot;cc&quot;, k = 52),
+            data = flu_train)
+ar1 &lt;- gamm(ilitotal ~ s(time) + s(week, bs = &quot;cc&quot;, k = 52),
+            data = flu_train,
+            correlation = corARMA(form = ~ 1|year, p = 1))
+
+ar2 &lt;- gamm(ilitotal ~ s(time) + s(week, bs = &quot;cc&quot;, k = 52),
+            data = flu_train,
+            correlation = corARMA(form = ~ 1|year, p = 2))
+
+ar3 &lt;- gamm(ilitotal ~ s(time) + s(week, bs = &quot;cc&quot;, k = 52),
+            data = flu_train,
+            correlation = corARMA(form = ~ 1|year, p = 3))
+
+ar4 &lt;- gamm(ilitotal ~ s(time) + s(week, bs = &quot;cc&quot;, k = 52),
+            data = flu_train,
+            correlation = corARMA(form = ~ 1|year, p = 4))</code></pre>
+<p>Let’s see how the fitted values look.</p>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/yes-corr-fitted-1.png" width="672" /></p>
+<p>The models look fairly similar and some are a bit hard to tell apart. We can also compare them by using an anova.</p>
+<pre class="r"><code>anova(ar0$lme, ar1$lme, ar2$lme, ar3$lme, ar4$lme)</code></pre>
+<pre><code>##         Model df      AIC      BIC    logLik   Test  L.Ratio p-value
+## ar0$lme     1  5 5853.890 5874.221 -2921.945                        
+## ar1$lme     2  6 5485.171 5509.568 -2736.586 1 vs 2 370.7186  &lt;.0001
+## ar2$lme     3  7 5487.087 5515.549 -2736.543 2 vs 3   0.0848  0.7709
+## ar3$lme     4  8 5475.866 5508.395 -2729.933 3 vs 4  13.2208  0.0003
+## ar4$lme     5  9 5477.765 5514.360 -2729.883 4 vs 5   0.1007  0.7510</code></pre>
+<p>From the AIC and p-values, it looks like we should go with the model with AR(1) residuals. But first let’s see what the residuals look like.</p>
+<p><img src="/post/2019-05-03-gams-for-time-series_files/figure-html/ar2-resid-1.png" width="672" /></p>
+<p>This is much better than we had before. Even though the fitted values don’t look particularly great, we can be more confident with this model. But how do the forecasts look?</p>
+</div>
