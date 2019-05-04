@@ -19,12 +19,12 @@ I have to admit that going into the that post I was pretty lost as to how we cou
 
 ### This Time
 
-In this post we are going to investigate the different ways in which we can model time series with GAMs. We will look at how we might want to use time as predictors, including functions of time in various ways by using different smoothing bases, and how to account for autocorrelation. We will stick with the flu-like illness data because it proven itself to be a bit finicky.
+In this post we are going to investigate the different ways in which we can model time series with GAMs. We will look at how we might want to use time as predictors, including functions of time in various ways by using different smoothing bases, and how to account for autocorrelation. We will stick with the flu-like illness data because it has proven itself to be a bit finicky.
 
 
 ### Resources
 
-Before we start I'd like to point out a few resources because if not for them I would still be a bit lost. The first is Noam Ross's [gam-resources](https://github.com/noamross/gam-resources) GAM resources GitHub repository. This is just what it sounds like, a list of resources for learning about GAMs. Of particular interest to me were the slides and video for his talk outlining what GAMs and the `mgcv` package are capable of. One section of this talk is dedicated to time series which really got the ball rolling for me. The second resource I found really helpful is Gavin Simpson's [blog post](https://www.fromthebottomoftheheap.net/2014/05/09/modelling-seasonal-data-with-gam/) showing how to use GAMs to model seasonal time series. This was quite convenient because the data at hand is seasonal.
+Before we start I'd like to point out a few resources because if not for them I would still be lost. The first is Noam Ross's [GAM resources](https://github.com/noamross/gam-resources) GitHub repository. This is just what it sounds like, a list of resources for learning about GAMs. Of particular interest to me were the slides and video for his talk outlining what GAMs and the `mgcv` package are capable of. One section of this talk is dedicated to time series which really got the ball rolling for me. The second resource I found really helpful is Gavin Simpson's [blog post](https://www.fromthebottomoftheheap.net/2014/05/09/modelling-seasonal-data-with-gam/) showing how to use GAMs to model seasonal time series. This was quite convenient because the data at hand is seasonal.
 
 ```{r kntr-setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE,
@@ -83,7 +83,7 @@ To improve upon the baseline model one thing we could do is use different basis 
 \[
 y = f_{trend}(x_1) + f_{seasonal}(x_2)
 \]
-where we have a smooth to account for the trend component of the series and another smooth to account for the seasonal component. Since the flu data is weekly, we will be using week for our seasonal component. For the trend component we have a couple of options. We could use 1, 2, 3, ... as we did before, or as Gavin suggests the data converted to a numeric value. The point is that the variable used for the trend component should capture the high level order of the series. The week does represent order but only *within* years. Let's go ahead and use the data converted to a numeric value. In R, this gives us the time in days since Jan 1, 1970.
+where we have a smooth to account for the trend component of the series and another smooth to account for the seasonal component. Since the flu data is weekly, we will be using week for our seasonal component. For the trend component we have a couple of options. We could use 1, 2, 3, ... as we did before, or as Gavin suggests the data converted to a numeric value. The point is that the variable used for the trend component should capture the overall order of the series. Week represents order only within each year so we need something else to reflect the overall order. We will use the date converted to a numeric value. In R, this gives us the time in days since Jan 1, 1970.
 
 In Gavin's post he uses the default thin plate spline for the trend variable. However, Noam's slides suggest considering a Gaussian process smooth. We will try both of these methods.
 
@@ -159,7 +159,7 @@ It appears that is the problem. So let's try to fix it.
 
 ### Aside - The gratia Package
 
-But before that I want to briefly mention the [gratia](https://github.com/gavinsimpson/gratia) package. `gratia` is a package by Gavin Simpson that provides `ggplot2` based graphics for `mgcv` objects along with some other helper functions. It's still a work in progress so not all `mgcv` model types are supported yet. As an example, we will look at the smooths for the model with the Gaussian process trend smooth.
+Before we do that I want to briefly mention the [gratia](https://github.com/gavinsimpson/gratia) package. `gratia` is a package by Gavin Simpson that provides `ggplot2` based graphics for `mgcv` objects along with some other helper functions. It's still a work in progress so not all `mgcv` model types are supported yet. As an example, we will look at the smooths for the model with the Gaussian process trend smooth.
 
 ```{r gp-cc-smooths}
 draw(gp_cc)
@@ -236,16 +236,61 @@ gridExtra::grid.arrange(ar1acf, ar1pacf, ncol = 2)
 This is much better than we had before. Even though the fitted values don't look particularly great, we can be more confident with this model. But how do the forecasts look?
 
 
-```{r yes-corr-fcast, echo = FALSE, eval = FALSE}
+```{r yes-corr-fcast, echo = FALSE}
 flu_test %>% 
-  mutate(ar1 = predict(ar1$gam)) %>% 
-  select(week_start, ilitotal, tp_cc, gp_cc) %>% 
-  gather("model", "value", -week_start, -ilitotal) %>% 
+  mutate(ar1 = predict(ar1$gam, newdata = flu_test)) %>% 
   ggplot(aes(week_start, ilitotal)) +
   geom_line() +
-  geom_line(aes(y = value, color = model)) +
+  geom_line(aes(y = ar1), color = "#F8766D") +
   theme_bw()
 ```
 
+
+Again, these forecasts are not very impressive. What's going on here? I'm speculating a bit but I think the problem is the predictions don't involve the AR process we used to model the error terms. Actually, the `mgcv` documentation says "Prediction from the returned gam object is straightforward using `predict.gam`, but this will set the random effects to zero." So basically, the predictions we can get are based on the smooth terms of the `gam` object and the residual AR process has no effect on the predictions. This is not really a problem if we only cared about the model itself but it does mean that we can't generate forecasts that incorporate both parts of the model. At least, that's what I can gather. If you have a way to include both aspects of the model please let me know.
+
+
+### Accounting for autocorrelation - Manually
+
+The only way I could think of to get out of this forecasting pickle was to 'manually' fit an ARIMA to the GAM model errors instead of having `gamm` do it. Fitting a model in this two-stage fashion allows us to generate forecasts of the errors from the ARIMA model and then add them to the predictions from the GAM model to get final forecasts. Really we could use any time series model for the errors but the `forecast` package has an automatic ARIMA selection function which makes things a lot easier.
+
+
+```{r two-stage-fit}
+gam_mod <- gam(ilitotal ~ s(time) + s(week, bs = "cc", k = 52),
+               data = flu_train)
+
+gam_errors <- residuals(gam_mod, type = "response")
+
+error_mod <- auto.arima(gam_errors)
+error_mod
+```
+
+
+The `auto.arima` function chose an AR(1) which makes since considering the previous model. We can also check the residuals to make sure everything is good.
+
+```{r check-resid}
+checkresiduals(error_mod, theme = theme_bw())
+```
+
+Good enough for our purposes. Let's go ahead and generate the forecasts.
+
+```{r two-stage-fcast}
+error_fcast <- forecast(error_mod, h = 13)$mean
+gam_fcast <- predict(gam_mod, newdata = flu_test)
+fcast <- gam_fcast + error_fcast
+```
+
+```{r two-stage-fcast-plot, echo = FALSE}
+flu_test %>% 
+  mutate(forecast = fcast) %>% 
+  ggplot(aes(week_start, ilitotal)) +
+  geom_line() +
+  geom_line(aes(y = forecast), color = "#F8766D") +
+  theme_bw()
+```
+
+Well this is a bit disappointing. The forecasts are better in the early weeks but like the previous models the downward shift is predicted to happen too soon.
+
+
+Is there anything else we could have done? Probably, but I'm not sure it would have helped. For example, we could have added in another smooth term interacting time with week. Or even tried different smooths for time and week. Or something besides an ARIMA for the errors. But realistically I think this data is not amenable to this type of modeling scheme. What I mean by that is using smooth functions of time and week to capture trend and seasonality which is a more traditional time series approach. [Last time](/2019-04-19/time-series-with-spline-based-models) we were able to get good forecasts by just using a few weeks worth of lagged predictors. It seems like that's the way to go with this data set.
 
 
