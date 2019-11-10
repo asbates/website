@@ -34,8 +34,9 @@ It implements new MCMC algorithms for Bayesian linear and liner mixed models tha
   converge geometrically.
 It still needs some work (mainly documentation) but unfortunately I just 
   haven't had the time.
-I hope to get to it before the Spring 2020 Bayesian statistics course at SDSU
-  as that is the primary audience.
+I did learn a lot, however, like using C++ with Rcpp, writing unit tests, and
+  generally how R packages work.
+
 
 # R Workshops at SDSU
 
