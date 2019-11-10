@@ -43,6 +43,7 @@ I did a few workshops for a student organization, the Society of Statisticians
   and Actuaries, when I was a student at SDSU.
 I gave workshops on an introduction to R, data wrangling with dplyr, data
   visualization with ggplot2, and an introduction to Git & GitHub.
+Materials can be found [here](https://github.com/asbates/ssa_r_workshops).
 This was a great experience because it forced me to think hard about what I 
   think is important about each topic/tool and why others should care.
   
