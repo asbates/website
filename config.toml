@@ -27,9 +27,13 @@ enableEmoji = true
     url = "https://github.com/asbates"
     weight = 4
 [[menu.main]]
+    name = "Twitter"
+    url = "https://twitter.com/asbates_"
+    weight = 5
+[[menu.main]]
     name = "LinkedIn"
     url = "https://www.linkedin.com/in/andrew-bates-a95b24143/"
-    weight = 5
+    weight = 6
 
 [params]
     description = "A statistics/R website built through Hugo and blogdown."
