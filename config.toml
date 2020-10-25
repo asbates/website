@@ -32,7 +32,7 @@ enableEmoji = true
     weight = 5
 [[menu.main]]
     name = "LinkedIn"
-    url = "https://www.linkedin.com/in/andrew-bates-a95b24143/"
+    url = "https://www.linkedin.com/in/a-bates"
     weight = 6
 
 [params]
